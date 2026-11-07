@@ -1,0 +1,6 @@
+---
+# Tests the container role alone: converge and verify run it with roles/container/vars/test.yml (vars_from: test),
+# a pulled busybox httpd, then idempotence and its verification entry point.
+# prepare.yml installs podman, which the role expects.
+provisioner:
+  name: ansible

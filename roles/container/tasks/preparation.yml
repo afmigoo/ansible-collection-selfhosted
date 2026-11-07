@@ -1,0 +1,50 @@
+---
+- name: Check the inputs
+  ansible.builtin.assert:
+    that:
+      - container_name is match('^[a-z_][a-z0-9_-]{0,31}$')
+      - (container_image | length > 0) != (container_build | length > 0)
+      - container_build | length == 0 or (container_build.containerfile | default('') | length > 0)
+    fail_msg: >-
+      container_name must be a valid user name (lowercase, up to 32 characters), and exactly one of container_image and
+      container_build (with its containerfile) must be set. Got name {{ container_name }},
+      image '{{ container_image }}', build keys {{ container_build.keys() | list }}.
+    quiet: true
+
+# Quadlet arrived in podman 4.4; the role installs nothing, afmigoo.provision.podman installs podman
+- name: Read the podman version
+  ansible.builtin.command: podman --version
+  register: __container_podman_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Check that podman >= 4.4 is installed
+  ansible.builtin.assert:
+    that:
+      - __container_podman_version.rc == 0
+      - __container_podman_version.stdout.split() | last is version('4.4', '>=')
+    fail_msg: >-
+      This role needs podman >= 4.4 for Quadlet; found: {{ __container_podman_version.stdout | default('') }}
+      {{ __container_podman_version.stderr | default('') }}. Install it first (e.g. with afmigoo.provision.podman).
+    quiet: true
+
+# Ansible becomes the unprivileged service user, which needs ACLs on its temp files
+- name: Look for setfacl
+  ansible.builtin.command: sh -c 'command -v setfacl'
+  register: __container_setfacl
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Check that setfacl is installed
+  ansible.builtin.assert:
+    that:
+      - __container_setfacl.rc == 0
+    fail_msg: Install the acl package; Ansible needs setfacl to run tasks as the service user.
+    quiet: true
+
+- name: Set the paths for this container
+  ansible.builtin.set_fact:
+    _container_home: /var/lib/{{ container_name }}
+    _container_image: "{{ container_image if container_image | length > 0 else 'localhost/' ~ container_name ~ ':latest' }}"

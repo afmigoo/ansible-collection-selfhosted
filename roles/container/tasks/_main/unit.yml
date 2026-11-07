@@ -1,0 +1,67 @@
+---
+- name: Write the unit as the service user
+  become: true
+  become_user: "{{ container_name }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ _container_runtime_dir }}"
+  block:
+    - name: Create the Quadlet directory
+      ansible.builtin.file:
+        path: "{{ _container_home }}/.config/containers/systemd"
+        state: directory
+        mode: "0700"
+
+    # podman --env-file format: KEY=value, the value taken literally up to the end of the line
+    - name: Write the secret environment file
+      ansible.builtin.copy:
+        content: |
+          {% for key, value in container_secret_env | dictsort %}
+          {{ key }}={{ value }}
+          {% endfor %}
+        dest: "{{ _container_home }}/.config/containers/{{ container_name }}.env"
+        mode: "0600"
+      when: container_secret_env | length > 0
+      no_log: true
+      notify: Restart the container service
+
+    - name: Remove the secret environment file
+      ansible.builtin.file:
+        path: "{{ _container_home }}/.config/containers/{{ container_name }}.env"
+        state: absent
+      when: container_secret_env | length == 0
+      notify: Restart the container service
+
+    - name: Write the Quadlet unit
+      ansible.builtin.template:
+        src: config/containers/systemd/container.container.j2
+        dest: "{{ _container_home }}/.config/containers/systemd/{{ container_name }}.container"
+        mode: "0600"
+      register: __container_unit
+      notify:
+        - Reload the container's user systemd
+        - Restart the container service
+
+    # Quadlet skips a unit it can't parse and leaves no service behind, so catch that here with its own message
+    - name: Generate the units with Quadlet
+      ansible.builtin.command: /usr/libexec/podman/quadlet -dryrun -user
+      register: __container_quadlet
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: not (ansible_check_mode and __container_unit is changed)
+
+    - name: Check that Quadlet turns the unit into a service
+      ansible.builtin.assert:
+        that:
+          - __container_quadlet.rc == 0
+          - ('---' ~ container_name ~ '.service---') in __container_quadlet.stdout
+        fail_msg: "Quadlet did not generate {{ container_name }}.service: {{ __container_quadlet.stderr | default('') }}"
+        quiet: true
+      when: not (ansible_check_mode and __container_unit is changed)
+
+- name: Request a restart for the caller's changes
+  ansible.builtin.debug:
+    msg: The caller changed its config, restarting {{ container_name }}
+  changed_when: true
+  when: container_restart | bool
+  notify: Restart the container service

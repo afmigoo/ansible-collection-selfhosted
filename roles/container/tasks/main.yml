@@ -1,0 +1,39 @@
+---
+- name: Container
+  when: container_enable | bool
+  block:
+    - name: Preparation
+      ansible.builtin.import_tasks: preparation.yml
+      tags: [container, always]
+
+    - name: Network
+      ansible.builtin.import_tasks: _main/network.yml
+      tags: [container, container_network]
+
+    - name: Service user
+      ansible.builtin.import_tasks: user.yml
+      tags: [container, container_user]
+
+    # In check mode a new user doesn't exist yet, so there is nothing to run as
+    - name: Image, unit and service
+      when: _container_uid | length > 0
+      block:
+        - name: Image
+          ansible.builtin.import_tasks: _main/image.yml
+          tags: [container, container_image]
+
+        - name: Unit
+          ansible.builtin.import_tasks: _main/unit.yml
+          tags: [container, container_unit]
+
+# Handlers use this inclusion's vars, so apply them before the next container is set up
+- name: Apply image and unit changes
+  ansible.builtin.meta: flush_handlers
+  tags: [always]
+
+- name: Service
+  ansible.builtin.import_tasks: _main/service.yml
+  when:
+    - container_enable | bool
+    - _container_uid | length > 0
+  tags: [container, container_service]

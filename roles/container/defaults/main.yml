@@ -1,0 +1,29 @@
+---
+# Master gate, the role does nothing unless enabled. App roles turn it on when they include this role
+container_enable: false
+
+# container_name has no default: it is required, and names the service user, its home (/var/lib/<name>) and the unit
+
+# Exactly one of the two: an image to pull, or a Containerfile to build on the host as the service user
+container_image: ""
+# containerfile: Containerfile content (render templates on the caller side); files: extra context files, name: content
+container_build: {}
+
+# Published ports ("host:container[/proto]"); each one listens on container_bind unless it names its own address
+container_ports: []
+container_bind: 0.0.0.0
+# Volume= lines ("host path:container path[:options]"); host paths must exist and belong to the service user
+container_volumes: []
+# Plain environment, written into the unit
+container_env: {}
+# Secret environment, written to a 0600 EnvironmentFile and never logged
+container_secret_env: {}
+# Raw lines for the unit's [Container] section (e.g. "Exec=httpd -f", "PodmanArgs=--stop-timeout=60")
+container_extra: []
+
+# Subordinate id ranges are handed out from here when the service user has none
+container_subid_start: 100000
+container_subid_count: 65536
+
+# Restart even if nothing here changed; app roles set it when their own config files changed
+container_restart: false

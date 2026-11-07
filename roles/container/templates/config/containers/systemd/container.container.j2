@@ -1,0 +1,32 @@
+#jinja2: lstrip_blocks: True
+# {{ ansible_managed }}
+[Unit]
+Description={{ container_name }} container (afmigoo.selfhosted)
+
+[Container]
+ContainerName={{ container_name }}
+Image={{ _container_image }}
+{% for port in container_ports %}
+PublishPort={{ port if port.split(':') | length > 2 else container_bind ~ ':' ~ port }}
+{% endfor %}
+{% for volume in container_volumes %}
+Volume={{ volume }}
+{% endfor %}
+{# Quadlet copies these into ExecStart, where systemd would expand % specifiers and ${variables} #}
+{% for key, value in container_env | dictsort %}
+Environment={{ (key ~ '=' ~ value) | replace('%', '%%') | replace('$', '$$') | to_json(ensure_ascii=False) }}
+{% endfor %}
+{% if container_secret_env | length > 0 %}
+EnvironmentFile={{ _container_home }}/.config/containers/{{ container_name }}.env
+{% endif %}
+{% for line in container_extra %}
+{{ line }}
+{% endfor %}
+
+[Service]
+Restart=always
+# Images are pulled or built before the unit starts, so this only covers starting the container
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

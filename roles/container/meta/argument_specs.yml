@@ -1,0 +1,110 @@
+---
+argument_specs:
+  main:
+    short_description: Run one container as a rootless podman Quadlet unit
+    description:
+      - Library role for app roles, which include it with include_role and vars; it does nothing unless container_enable.
+      - Creates a system user named container_name (home /var/lib/<name>) with a subuid/subgid range and lingering,
+        pulls container_image or builds container_build as that user, writes the Quadlet unit to
+        ~/.config/containers/systemd/<name>.container and starts it in the user's systemd.
+      - Needs podman >= 4.4 (Quadlet) and setfacl on the host; it installs neither. Firewall rules and port redirects are
+        out of scope.
+    author: afmigoo
+    options:
+      container_enable:
+        type: bool
+        default: false
+        description: Master gate; the role does nothing unless true.
+      container_name:
+        type: str
+        required: true
+        description: Name of the service user, its home (/var/lib/<name>), the container and the systemd unit.
+      container_image:
+        type: str
+        default: ""
+        description: Image to pull (e.g. docker.io/library/busybox:1.37). Set exactly one of this and container_build.
+      container_build:
+        type: dict
+        default: {}
+        description:
+          - Build an image on the host as the service user instead of pulling one; tagged localhost/<name>:latest.
+          - The image is rebuilt, and the service restarted, when the Containerfile or a context file changes.
+        options:
+          containerfile:
+            type: str
+            description: Containerfile content. Callers render their template themselves (e.g. with a template lookup).
+          files:
+            type: dict
+            description: Extra files for the build context, as file name to content.
+      container_ports:
+        type: list
+        elements: str
+        default: []
+        description:
+          - Published ports as "host:container[/proto]" (e.g. 25565:25565/tcp), on container_bind.
+          - An entry with its own address ("127.0.0.1:8080:80") keeps it. Ports below 1024 need
+            net.ipv4.ip_unprivileged_port_start lowered, which this role doesn't do.
+      container_bind:
+        type: str
+        default: 0.0.0.0
+        description: Address the published ports listen on; 127.0.0.1 for services behind a local proxy.
+      container_volumes:
+        type: list
+        elements: str
+        default: []
+        description: Quadlet Volume= values ("host path:container path[:options]"). Host paths must exist and belong to the service user.
+      container_env:
+        type: dict
+        default: {}
+        description: Environment variables, written into the unit.
+      container_secret_env:
+        type: dict
+        default: {}
+        description: Secret environment variables, written to a 0600 EnvironmentFile in the user's home and never logged.
+      container_extra:
+        type: list
+        elements: str
+        default: []
+        description: Raw lines added to the unit's [Container] section (e.g. "Exec=httpd -f -p 8080").
+      container_restart:
+        type: bool
+        default: false
+        description: Restart the service even if nothing of this role changed; callers set it when their own config files changed.
+      container_subid_start:
+        type: int
+        default: 100000
+        description: First subordinate id handed out when the service user has no range yet.
+      container_subid_count:
+        type: int
+        default: 65536
+        description: Size of the service user's subordinate id range.
+  user:
+    short_description: Create a container's service user
+    description:
+      - Creates the system user container_name (home /var/lib/<name>), gives it a subuid/subgid range and enables lingering.
+      - main runs this too. App roles call it first (tasks_from user) when they need the user to own files before the
+        container starts.
+    author: afmigoo
+    options:
+      container_name:
+        type: str
+        required: true
+        description: Name of the service user.
+      container_subid_start:
+        type: int
+        default: 100000
+        description: First subordinate id handed out when the service user has no range yet.
+      container_subid_count:
+        type: int
+        default: 65536
+        description: Size of the service user's subordinate id range.
+  verification:
+    short_description: Verify a container
+    description:
+      - Checks that the container's user service is active and its container is running.
+    author: afmigoo
+    options:
+      container_name:
+        type: str
+        required: true
+        description: Name of the container (and of its service user and unit).

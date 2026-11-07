@@ -1,0 +1,44 @@
+---
+- name: Probe the container
+  tags: [container, container_verify]
+  block:
+    - name: Look up the service user
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ container_name }}"
+
+    - name: Check the service as its user
+      become: true
+      become_user: "{{ container_name }}"
+      environment:
+        XDG_RUNTIME_DIR: /run/user/{{ ansible_facts.getent_passwd[container_name][1] }}
+      block:
+        # A service that was just (re)started may still be activating
+        - name: Read the service state
+          ansible.builtin.systemd_service:
+            name: "{{ container_name }}.service"
+            scope: user
+          register: __container_active
+          failed_when: false
+          until: (__container_active.status.ActiveState | default('')) == 'active'
+          retries: 10
+          delay: 3
+
+        - name: Read the container state
+          ansible.builtin.command: podman container inspect --format {{ '{{' }}.State.Running{{ '}}' }} {{ container_name }}
+          register: __container_running
+          changed_when: false
+          failed_when: false
+          check_mode: false
+
+    - name: Assert the service is active and its container running
+      ansible.builtin.assert:
+        that:
+          - (__container_active.status.ActiveState | default('')) == 'active'
+          - __container_running.rc == 0
+          - __container_running.stdout | trim == 'true'
+        fail_msg: >-
+          {{ container_name }}.service is '{{ __container_active.status.ActiveState | default('unknown') }}', container running:
+          '{{ __container_running.stdout | trim }}' {{ __container_running.stderr | default('') }}.
+          See journalctl --user -u {{ container_name }} as that user.
+        quiet: true

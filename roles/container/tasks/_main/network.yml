@@ -1,0 +1,14 @@
+---
+# Podman 5 makes rootless Quadlet units wait for the system's network-online.target, and on hosts where nothing
+# pulls that target in (e.g. Debian with ifupdown) every start stalls for 90 s. Have it reached at boot and now
+# What systemctl add-wants multi-user.target network-online.target does
+- name: Pull network-online.target in at boot
+  ansible.builtin.file:
+    src: /usr/lib/systemd/system/network-online.target
+    dest: /etc/systemd/system/multi-user.target.wants/network-online.target
+    state: link
+
+- name: Reach network-online.target
+  ansible.builtin.systemd_service:
+    name: network-online.target
+    state: started

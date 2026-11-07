@@ -1,0 +1,14 @@
+---
+# Test vars for the Molecule scenario, loaded with vars_from: test; the role itself never loads them
+container_enable: true
+container_name: busybox-web
+container_image: docker.io/library/busybox:1.37
+container_ports: ["8080:8080/tcp"]
+container_bind: 127.0.0.1
+# % and $ must reach the container literally, not as systemd specifiers or variables
+container_env:
+  GREETING: 100% ${HOME} %h
+container_secret_env:
+  TOKEN: molecule-throwaway-token
+container_extra:
+  - Exec=httpd -f -p 8080 -h /tmp

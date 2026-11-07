@@ -1,0 +1,13 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    # What afmigoo.provision.podman installs; uidmap for rootless podman, acl so Ansible can become the service user
+    - name: Install podman
+      ansible.builtin.apt:
+        name: [podman, uidmap, acl]
+        state: present
+        update_cache: true
+        cache_valid_time: 3600

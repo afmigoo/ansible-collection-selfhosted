@@ -1,0 +1,52 @@
+---
+- name: Pull or build as the service user
+  become: true
+  become_user: "{{ container_name }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ _container_runtime_dir }}"
+  block:
+    - name: Pull the image
+      containers.podman.podman_image:
+        name: "{{ container_image }}"
+        state: present
+      when: container_image | length > 0
+      notify: Restart the container service
+
+    - name: Build the image
+      when: container_build | length > 0
+      block:
+        - name: Create the build context
+          ansible.builtin.file:
+            path: "{{ _container_home }}/build"
+            state: directory
+            mode: "0700"
+
+        - name: Write the Containerfile
+          ansible.builtin.copy:
+            content: "{{ container_build.containerfile }}"
+            dest: "{{ _container_home }}/build/Containerfile"
+            mode: "0600"
+
+        - name: Write the extra context files
+          ansible.builtin.copy:
+            content: "{{ __container_file.value }}"
+            dest: "{{ _container_home }}/build/{{ __container_file.key }}"
+            mode: "0600"
+          loop: "{{ container_build.files | default({}) | dict2items }}"
+          loop_control:
+            loop_var: __container_file
+            label: "{{ __container_file.key }}"
+          register: __container_context_files
+
+        # podman_image rebuilds by itself when the Containerfile changes (it labels the image with its hash);
+        # force covers changed context files
+        - name: Build the image
+          containers.podman.podman_image:
+            name: localhost/{{ container_name }}
+            tag: latest
+            path: "{{ _container_home }}/build"
+            build:
+              file: "{{ _container_home }}/build/Containerfile"
+            state: build
+            force: "{{ __container_context_files is changed }}"
+          notify: Restart the container service
