@@ -7,7 +7,7 @@ argument_specs:
         Temurin 25 JRE) and runs it with afmigoo.selfhosted.container as the system user minecraft_name.
       - Writes eula.txt and the server.properties keys in minecraft_properties to /var/lib/<name>/data before the
         server starts, and restarts it when they change.
-      - Needs podman >= 4.4 and setfacl on the host (e.g. from afmigoo.provision.podman). Opening the port in the
+      - Needs podman >= 4.4 on the host (e.g. from afmigoo.provision.podman). Opening the port in the
         firewall is up to you.
     author: afmigoo
     options:

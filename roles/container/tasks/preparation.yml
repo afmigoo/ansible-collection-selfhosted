@@ -29,21 +29,6 @@
       {{ __container_podman_version.stderr | default('') }}. Install it first (e.g. with afmigoo.provision.podman).
     quiet: true
 
-# Ansible becomes the unprivileged service user, which needs ACLs on its temp files
-- name: Look for setfacl
-  ansible.builtin.command: sh -c 'command -v setfacl'
-  register: __container_setfacl
-  changed_when: false
-  failed_when: false
-  check_mode: false
-
-- name: Check that setfacl is installed
-  ansible.builtin.assert:
-    that:
-      - __container_setfacl.rc == 0
-    fail_msg: Install the acl package; Ansible needs setfacl to run tasks as the service user.
-    quiet: true
-
 - name: Set the paths for this container
   ansible.builtin.set_fact:
     _container_home: /var/lib/{{ container_name }}

@@ -18,8 +18,9 @@ documented in each role's `meta/argument_specs.yml` (`ansible-doc -t role
 afmigoo.selfhosted.<role>`). Each role also has a `verification` entry point
 (`tasks_from: verification`).
 
-The roles need podman >= 4.4 (Quadlet) and `setfacl` (package `acl`) on the
-host and install neither; `afmigoo.provision.podman` installs both. Debian 12 is
+The roles need podman >= 4.4 (Quadlet) on the host and don't install it;
+`afmigoo.provision.podman` does. When Ansible logs in as a user other than root,
+it also needs `setfacl` (package `acl`) to run tasks as the service user. Debian 12 is
 not supported: its podman 4.3 has no Quadlet. Roles never pull in other roles
 as dependencies, so playbooks order them; app roles include `container`
 themselves. Opening ports in the firewall is up to you (e.g.

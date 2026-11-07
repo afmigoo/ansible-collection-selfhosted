@@ -4,7 +4,8 @@
   gather_facts: false
   become: true
   tasks:
-    # What afmigoo.provision.podman installs; uidmap for rootless podman, acl so Ansible can become the service user
+    # What afmigoo.provision.podman installs: uidmap for rootless podman, and acl because Molecule
+    # logs in as vagrant, not root, so Ansible needs setfacl to become the service user
     - name: Install podman
       ansible.builtin.apt:
         name: [podman, uidmap, acl]

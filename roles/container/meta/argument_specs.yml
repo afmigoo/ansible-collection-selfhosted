@@ -7,7 +7,7 @@ argument_specs:
       - Creates a system user named container_name (home /var/lib/<name>) with a subuid/subgid range and lingering,
         pulls container_image or builds container_build as that user, writes the Quadlet unit to
         ~/.config/containers/systemd/<name>.container and starts it in the user's systemd.
-      - Needs podman >= 4.4 (Quadlet) and setfacl on the host; it installs neither. Firewall rules and port redirects are
+      - Needs podman >= 4.4 (Quadlet) on the host; it doesn't install it. Firewall rules and port redirects are
         out of scope.
     author: afmigoo
     options:
