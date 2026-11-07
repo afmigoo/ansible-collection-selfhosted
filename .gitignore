@@ -1,0 +1,6 @@
+.ansible/
+.venv/
+*.tar.gz
+# agent-sandbox SSH keys never belong in this repo
+keys/
+.claude/

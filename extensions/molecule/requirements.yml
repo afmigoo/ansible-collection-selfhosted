@@ -1,0 +1,8 @@
+---
+collections:
+  # Used by the vagrant driver of molecule-plugins to create and destroy the VMs
+  - name: community.vagrant
+    version: ">=1.0.1"
+  # The roles' own dependency (see ../../requirements.yml for the pinned version)
+  - name: containers.podman
+    version: ">=1.21.0,<2.0.0"

@@ -1,0 +1,37 @@
+---
+namespace: afmigoo
+name: selfhosted
+version: 0.1.0
+readme: README.md
+authors:
+  - afmigoo
+description: Self-hosted services as rootless podman containers (Quadlet units), one system user per service.
+license:
+  - MIT
+tags:
+  - linux
+  - debian
+  - ubuntu
+  - podman
+  - quadlet
+  - selfhosted
+  - minecraft
+dependencies:
+  containers.podman: ">=1.21.0,<2.0.0"
+repository: https://github.com/afmigoo/ansible-collection-selfhosted
+build_ignore:
+  - .git
+  - .gitignore
+  - .gitleaks.toml
+  - .python-version
+  - .venv
+  - requirements.txt
+  - requirements.yml
+  - .github
+  - .ansible
+  - .claude
+  - .ansible-lint
+  - .yamllint
+  - "*.tar.gz"
+  - extensions
+  - Makefile

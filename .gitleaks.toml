@@ -1,0 +1,7 @@
+# Default rules plus an allowlist for the throwaway Molecule test secrets
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Role test vars: throwaway passwords for Molecule VMs that protect nothing"
+paths = ['''^roles/[^/]+/vars/test\.yml$''']

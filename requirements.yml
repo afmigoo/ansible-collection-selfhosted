@@ -1,0 +1,6 @@
+---
+# Collections the roles use, pinned so lint and builds don't change under us. Molecule's own needs are in
+# extensions/molecule/requirements.yml.
+collections:
+  - name: containers.podman
+    version: 1.21.2

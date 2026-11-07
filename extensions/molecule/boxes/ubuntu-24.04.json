@@ -1,0 +1,15 @@
+{
+  "name": "cloud-image/ubuntu-24.04-amd64",
+  "description": "amd64-only metadata for cloud-image/ubuntu-24.04, for Vagrant < 2.4 which ignores box architectures",
+  "versions": [
+    {
+      "version": "20260926.0.0",
+      "providers": [
+        {
+          "name": "libvirt",
+          "url": "https://vagrantcloud.com/cloud-image/boxes/ubuntu-24.04/versions/20260926.0.0/providers/libvirt/amd64/vagrant.box"
+        }
+      ]
+    }
+  ]
+}

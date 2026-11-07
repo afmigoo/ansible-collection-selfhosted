@@ -1,0 +1,52 @@
+---
+# Shared by every scenario. Each scenario boots three VMs at once (vagrant-libvirt, 1 vCPU each, 1 GiB for Debian and
+# 2 GiB for Ubuntu, 3 vCPU / 5 GiB in total; the minecraft scenario overrides this) and destroys them before the next
+# scenario starts. Keep the default --workers 1, each extra worker adds another three VMs.
+# Debian 12 is left out: its podman 4.3 has no Quadlet, and the collection needs podman >= 4.4.
+dependency:
+  name: galaxy
+  options:
+    requirements-file: ${MOLECULE_SCENARIO_DIRECTORY}/../requirements.yml
+driver:
+  name: vagrant
+  provider:
+    name: libvirt
+  parallel: true
+platforms:
+  - name: molecule-debian-13
+    box: debian/trixie64
+    cpus: 1
+    memory: 1024
+  # Ubuntu publishes no libvirt boxes; cloud-image builds them from the official cloud images. Vagrant < 2.4
+  # ignores box architectures and may pick arm64, so boxes/*.json list only the amd64 download of a pinned
+  # version (a direct URL doesn't work: Vagrant Cloud's redirects claim to be JSON metadata). To update, bump
+  # the version in those files from https://portal.cloud.hashicorp.com/vagrant/discover/cloud-image
+  - name: molecule-ubuntu-2404
+    box: cloud-image/ubuntu-24.04-amd64
+    box_url: file://${MOLECULE_SCENARIO_DIRECTORY}/../boxes/ubuntu-24.04.json
+    cpus: 1
+    memory: 2048
+  - name: molecule-ubuntu-2604
+    box: cloud-image/ubuntu-26.04-amd64
+    box_url: file://${MOLECULE_SCENARIO_DIRECTORY}/../boxes/ubuntu-26.04.json
+    cpus: 1
+    memory: 2048
+provisioner:
+  name: ansible
+  inventory:
+    group_vars:
+      all:
+        ansible_python_interpreter: /usr/bin/python3
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - dependency
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - verify
+    - destroy
