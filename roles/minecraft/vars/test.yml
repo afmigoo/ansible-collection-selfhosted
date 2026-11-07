@@ -1,0 +1,15 @@
+---
+# Test vars for the Molecule scenario, loaded with vars_from: test; the role itself never loads them
+minecraft_enable: true
+minecraft_eula: true
+minecraft_memory: 1G
+minecraft_properties:
+  # Escaped by Paper when it rewrites the file; idempotence checks that the role writes it the same way
+  motd: "Molecule: test #1"
+  max-players: 5
+  online-mode: false
+  view-distance: 4
+minecraft_enable_rcon: true
+minecraft_rcon_password: molecule-throwaway-rcon
+# The first start downloads and patches the server on small VMs
+minecraft_verify_timeout: 900

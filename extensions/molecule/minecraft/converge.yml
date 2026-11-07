@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Run the minecraft role with its test vars
+      ansible.builtin.import_role:
+        name: afmigoo.selfhosted.minecraft
+        vars_from: test

@@ -1,0 +1,11 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Verify the minecraft role with its test vars
+      ansible.builtin.import_role:
+        name: afmigoo.selfhosted.minecraft
+        tasks_from: verification
+        vars_from: test

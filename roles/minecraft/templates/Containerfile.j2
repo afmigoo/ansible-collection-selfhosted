@@ -1,0 +1,19 @@
+#jinja2: lstrip_blocks: True
+# {{ ansible_managed }}
+FROM docker.io/library/eclipse-temurin:25-jre AS rcon-builder
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates git build-essential \
+ && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 --branch {{ minecraft_mcrcon_version }} https://github.com/Tiiffi/mcrcon.git /opt/mcrcon \
+ && make -C /opt/mcrcon
+
+FROM docker.io/library/alpine:3 AS jar-downloader
+RUN wget -O /opt/paper.jar '{{ minecraft_paper_url }}' \
+ && echo '{{ minecraft_paper_sha256 }}  /opt/paper.jar' | sha256sum -c -
+
+FROM docker.io/library/eclipse-temurin:25-jre
+WORKDIR /data
+COPY --from=jar-downloader /opt/paper.jar /opt/paper.jar
+COPY --from=rcon-builder /opt/mcrcon/mcrcon /usr/local/bin/mcrcon
+# exec, so java gets the stop signal and saves the world
+ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS:--Xms2G -Xmx2G} -jar /opt/paper.jar --nogui"]

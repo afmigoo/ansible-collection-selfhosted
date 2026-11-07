@@ -1,0 +1,67 @@
+---
+- name: Check the service and its container
+  ansible.builtin.include_role:
+    name: afmigoo.selfhosted.container
+    tasks_from: verification
+    apply:
+      tags: [minecraft, minecraft_verify]
+  vars:
+    container_name: "{{ minecraft_name }}"
+  tags: [minecraft, minecraft_verify]
+
+- name: Probe the server
+  tags: [minecraft, minecraft_verify]
+  block:
+    - name: Look up the service user
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ minecraft_name }}"
+
+    - name: Probe inside the container as the service user
+      become: true
+      become_user: "{{ minecraft_name }}"
+      environment:
+        XDG_RUNTIME_DIR: /run/user/{{ ansible_facts.getent_passwd[minecraft_name][1] }}
+      block:
+        # The published host port is bound by podman as soon as the container starts, so only a listening socket
+        # inside the container (25565 is 63DD) shows that the server is up
+        - name: Wait until the server listens
+          ansible.builtin.command: >-
+            podman exec {{ minecraft_name }}
+            awk '$4 == "0A" && $2 ~ /:63DD$/ { found = 1 } END { exit !found }' /proc/net/tcp /proc/net/tcp6
+          register: __minecraft_listen
+          changed_when: false
+          failed_when: false
+          check_mode: false
+          until: __minecraft_listen.rc == 0
+          retries: "{{ (minecraft_verify_timeout / 10) | round(0, 'ceil') | int }}"
+          delay: 10
+
+        - name: Ask RCON for the player list
+          ansible.builtin.command: podman exec {{ minecraft_name }} mcrcon list
+          register: __minecraft_rcon_list
+          changed_when: false
+          failed_when: false
+          check_mode: false
+          # RCON opens only once the world has loaded, after the game port
+          until: __minecraft_rcon_list.rc == 0
+          retries: "{{ (minecraft_verify_timeout / 10) | round(0, 'ceil') | int }}"
+          delay: 10
+          when: minecraft_enable_rcon | bool
+
+    - name: Check the published port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ minecraft_port }}"
+        timeout: 10
+
+    - name: Assert the server is up
+      ansible.builtin.assert:
+        that:
+          - __minecraft_listen.rc == 0
+          - not minecraft_enable_rcon or __minecraft_rcon_list.rc == 0
+        fail_msg: >-
+          Listening in the container: {{ __minecraft_listen.rc == 0 }}, RCON:
+          {{ __minecraft_rcon_list.stdout | default('') }} {{ __minecraft_rcon_list.stderr | default('') }}.
+          See journalctl --user -u {{ minecraft_name }} as {{ minecraft_name }}.
+        quiet: true

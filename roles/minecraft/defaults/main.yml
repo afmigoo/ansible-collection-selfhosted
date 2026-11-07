@@ -1,0 +1,30 @@
+---
+# Master gate, the role does nothing unless enabled
+minecraft_enable: false
+
+# You must accept the Minecraft EULA (https://aka.ms/MinecraftEULA) yourself; the role fails until this is true
+minecraft_eula: false
+
+# Service user, container and unit name; data lives in /var/lib/<name>/data
+minecraft_name: minecraft
+
+# Paper server jar, downloaded while the image builds and checked against its sha256
+minecraft_paper_url: https://fill-data.papermc.io/v1/objects/542288423062864e56969a44c6927b860152cb827c65ff5f841178602bc99e9a/paper-26.1.2-71.jar
+minecraft_paper_sha256: 542288423062864e56969a44c6927b860152cb827c65ff5f841178602bc99e9a
+# mcrcon git tag, built from source into the image
+minecraft_mcrcon_version: v0.7.2
+
+# Java heap (-Xms and -Xmx), e.g. 2G or 1536M
+minecraft_memory: 2G
+# Host port; the server listens on 25565 inside the container
+minecraft_port: 25565
+
+# server.properties keys to manage, one line each; Paper keeps every other key as it wrote it
+minecraft_properties: {}
+
+# RCON inside the container (not published): `podman exec <name> mcrcon <command>` as the service user
+minecraft_enable_rcon: false
+minecraft_rcon_password: ""
+
+# How long the verification waits for the server to listen; the first start downloads and patches the server
+minecraft_verify_timeout: 600

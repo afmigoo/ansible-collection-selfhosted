@@ -1,0 +1,86 @@
+---
+argument_specs:
+  main:
+    short_description: Run a Paper Minecraft server in rootless podman
+    description:
+      - Builds a Paper image on the host (mcrcon built from source, the Paper jar checked against its sha256, Eclipse
+        Temurin 25 JRE) and runs it with afmigoo.selfhosted.container as the system user minecraft_name.
+      - Writes eula.txt and the server.properties keys in minecraft_properties to /var/lib/<name>/data before the
+        server starts, and restarts it when they change.
+      - Needs podman >= 4.4 and setfacl on the host (e.g. from afmigoo.provision.podman). Opening the port in the
+        firewall is up to you.
+    author: afmigoo
+    options:
+      minecraft_enable:
+        type: bool
+        default: false
+        description: Master gate; the role does nothing unless true.
+      minecraft_eula:
+        type: bool
+        default: false
+        description: Set to true to accept the Minecraft EULA (https://aka.ms/MinecraftEULA); the role fails otherwise.
+      minecraft_name:
+        type: str
+        default: minecraft
+        description: Service user, container and unit name; data lives in /var/lib/<name>/data.
+      minecraft_paper_url:
+        type: str
+        default: https://fill-data.papermc.io/v1/objects/542288423062864e56969a44c6927b860152cb827c65ff5f841178602bc99e9a/paper-26.1.2-71.jar
+        description: Paper server jar to download while building the image (https://papermc.io/downloads/paper).
+      minecraft_paper_sha256:
+        type: str
+        default: 542288423062864e56969a44c6927b860152cb827c65ff5f841178602bc99e9a
+        description: sha256 of the jar; the build fails if it doesn't match.
+      minecraft_mcrcon_version:
+        type: str
+        default: v0.7.2
+        description: Git tag of https://github.com/Tiiffi/mcrcon to build into the image.
+      minecraft_memory:
+        type: str
+        default: 2G
+        description: Java heap size, used for both -Xms and -Xmx (e.g. 2G, 1536M).
+      minecraft_port:
+        type: int
+        default: 25565
+        description: Host port published on all addresses; the server listens on 25565 inside the container.
+      minecraft_properties:
+        type: dict
+        default: {}
+        description:
+          - "server.properties keys to manage, e.g. {motd: My server, max-players: 10, online-mode: true}."
+          - Only these keys are touched, one line each; Paper keeps the rest. Booleans become true/false. server-port and
+            the RCON keys are managed by the role.
+      minecraft_enable_rcon:
+        type: bool
+        default: false
+        description:
+          - Enable RCON on port 25575 inside the container (not published). Run commands as the service user with
+            podman exec <name> mcrcon <command>; the container has the password in MCRCON_PASS.
+      minecraft_rcon_password:
+        type: str
+        default: ""
+        no_log: true
+        description: RCON password, required with minecraft_enable_rcon.
+  verification:
+    short_description: Verify the Minecraft server
+    description:
+      - Checks that the service is active and its container running, waits until the server listens inside the container
+        and on the host port and, with RCON enabled, that RCON answers.
+    author: afmigoo
+    options:
+      minecraft_name:
+        type: str
+        default: minecraft
+        description: Service user, container and unit name.
+      minecraft_port:
+        type: int
+        default: 25565
+        description: Host port to check.
+      minecraft_enable_rcon:
+        type: bool
+        default: false
+        description: Also check that RCON answers.
+      minecraft_verify_timeout:
+        type: int
+        default: 600
+        description: Seconds to wait for the server to listen; its first start downloads and patches the server.

@@ -1,0 +1,26 @@
+---
+- name: Minecraft
+  when: minecraft_enable | bool
+  block:
+    - name: Preparation
+      ansible.builtin.import_tasks: preparation.yml
+      tags: [minecraft, always]
+
+    # The user has to own the data dir before the server first starts
+    - name: Create the service user
+      ansible.builtin.include_role:
+        name: afmigoo.selfhosted.container
+        tasks_from: user
+        apply:
+          tags: [minecraft, minecraft_data]
+      vars:
+        container_name: "{{ minecraft_name }}"
+      tags: [minecraft, minecraft_data]
+
+    - name: Data
+      ansible.builtin.import_tasks: _main/data.yml
+      tags: [minecraft, minecraft_data]
+
+    - name: Container
+      ansible.builtin.import_tasks: _main/container.yml
+      tags: [minecraft, minecraft_container]

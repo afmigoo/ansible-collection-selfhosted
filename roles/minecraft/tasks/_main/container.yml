@@ -1,0 +1,27 @@
+---
+# Rendered here: a template lookup inside the container role would search that role's templates
+- name: Render the Containerfile
+  ansible.builtin.set_fact:
+    _minecraft_containerfile: "{{ lookup('ansible.builtin.template', 'Containerfile.j2') }}"
+
+- name: Run the server container
+  ansible.builtin.include_role:
+    name: afmigoo.selfhosted.container
+    apply:
+      tags: [minecraft, minecraft_container]
+  vars:
+    container_enable: true
+    container_name: "{{ minecraft_name }}"
+    container_build:
+      containerfile: "{{ _minecraft_containerfile }}"
+    container_ports: ["{{ minecraft_port }}:25565/tcp"]
+    container_volumes: ["{{ _minecraft_data_dir }}:/data"]
+    container_env:
+      JAVA_OPTS: -Xms{{ minecraft_memory }} -Xmx{{ minecraft_memory }}
+    # mcrcon reads the password from MCRCON_PASS
+    container_secret_env: "{{ {'MCRCON_PASS': minecraft_rcon_password} if minecraft_enable_rcon | bool else {} }}"
+    # Give the server time to save the world when the service stops
+    container_extra:
+      - PodmanArgs=--stop-timeout=60
+    container_restart: "{{ __minecraft_eula is changed or __minecraft_properties is changed or __minecraft_rcon is changed }}"
+  tags: [minecraft, minecraft_container]

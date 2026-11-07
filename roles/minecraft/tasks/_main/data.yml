@@ -1,0 +1,67 @@
+---
+- name: Look up the service user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ minecraft_name }}"
+    fail_key: false
+
+# In check mode a new user doesn't exist yet to own the files
+- name: Write the data files
+  when: (ansible_facts.getent_passwd | default({}))[minecraft_name] | default(none) is not none
+  block:
+    - name: Create the data dir
+      ansible.builtin.file:
+        path: "{{ _minecraft_data_dir }}"
+        state: directory
+        owner: "{{ minecraft_name }}"
+        group: "{{ minecraft_name }}"
+        mode: "0750"
+
+    - name: Accept the EULA
+      ansible.builtin.copy:
+        content: "eula=true\n"
+        dest: "{{ _minecraft_data_dir }}/eula.txt"
+        owner: "{{ minecraft_name }}"
+        group: "{{ minecraft_name }}"
+        mode: "0644"
+      register: __minecraft_eula
+
+    # Paper rewrites server.properties on every start but keeps the values, escaped the way Java's Properties
+    # escapes them (\ = : # ! get a backslash), so write them that way to stay idempotent
+    - name: Set the managed server.properties keys
+      ansible.builtin.lineinfile:
+        path: "{{ _minecraft_data_dir }}/server.properties"
+        regexp: ^{{ __minecraft_property.key | regex_escape }}=
+        line: >-
+          {{ __minecraft_property.key }}={{ __minecraft_value | replace(_minecraft_bs, _minecraft_bs * 2)
+             | replace('=', _minecraft_bs ~ '=') | replace(':', _minecraft_bs ~ ':')
+             | replace('#', _minecraft_bs ~ '#') | replace('!', _minecraft_bs ~ '!') }}
+        create: true
+        owner: "{{ minecraft_name }}"
+        group: "{{ minecraft_name }}"
+        mode: "0644"
+      vars:
+        __minecraft_value: >-
+          {{ __minecraft_property.value | string | lower if __minecraft_property.value is boolean
+             else __minecraft_property.value | string }}
+      loop: "{{ _minecraft_properties | dict2items }}"
+      loop_control:
+        loop_var: __minecraft_property
+        label: "{{ __minecraft_property.key }}"
+      register: __minecraft_properties
+
+    - name: Set the RCON password
+      ansible.builtin.lineinfile:
+        path: "{{ _minecraft_data_dir }}/server.properties"
+        regexp: ^rcon\.password=
+        line: >-
+          rcon.password={{ minecraft_rcon_password | replace(_minecraft_bs, _minecraft_bs * 2)
+             | replace('=', _minecraft_bs ~ '=') | replace(':', _minecraft_bs ~ ':')
+             | replace('#', _minecraft_bs ~ '#') | replace('!', _minecraft_bs ~ '!') }}
+        create: true
+        owner: "{{ minecraft_name }}"
+        group: "{{ minecraft_name }}"
+        mode: "0644"
+      when: minecraft_enable_rcon | bool
+      no_log: true
+      register: __minecraft_rcon

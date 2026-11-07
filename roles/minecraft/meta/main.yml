@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  author: afmigoo
+  description: Paper Minecraft server as a rootless podman Quadlet unit, its image built on the host
+  license: MIT
+  min_ansible_version: "2.17"
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+    - name: Ubuntu
+      versions:
+        - noble
+        - resolute
+dependencies: []

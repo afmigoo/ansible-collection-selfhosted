@@ -1,0 +1,30 @@
+---
+- name: Check that the EULA is accepted
+  ansible.builtin.assert:
+    that:
+      - minecraft_eula | bool
+    fail_msg: >-
+      The Minecraft server only runs once you accept the Minecraft EULA (https://aka.ms/MinecraftEULA).
+      Read it, then set minecraft_eula: true.
+    quiet: true
+
+- name: Check the inputs
+  ansible.builtin.assert:
+    that:
+      - minecraft_memory is match('^[0-9]+[KkMmGg]$')
+      - minecraft_paper_sha256 is match('^[0-9a-f]{64}$')
+      - not minecraft_enable_rcon or minecraft_rcon_password | length > 0
+    fail_msg: >-
+      minecraft_memory must be a Java size like 2G or 1536M (got {{ minecraft_memory }}), minecraft_paper_sha256 a
+      lowercase sha256, and minecraft_enable_rcon needs minecraft_rcon_password.
+    quiet: true
+
+- name: Set the server's paths and managed properties
+  ansible.builtin.set_fact:
+    _minecraft_data_dir: /var/lib/{{ minecraft_name }}/data
+    # One backslash, for escaping server.properties values without fighting Jinja's string escapes
+    _minecraft_bs: "\\"
+    # The container side of the port mapping is fixed. The RCON password gets its own task, so it can stay out of logs
+    _minecraft_properties: >-
+      {{ minecraft_properties | combine({'server-port': 25565, 'enable-rcon': minecraft_enable_rcon | bool}
+         | combine({'rcon.port': 25575} if minecraft_enable_rcon | bool else {})) }}
