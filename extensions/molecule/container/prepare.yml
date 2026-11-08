@@ -12,3 +12,11 @@
         state: present
         update_cache: true
         cache_valid_time: 3600
+
+    # A plain account that happens to collide with container_name "guardtest"'s default container_user, to check
+    # that the role's foreign-account guard refuses to touch it (verify.yml)
+    - name: Create a foreign account colliding with a default container_user
+      ansible.builtin.user:
+        name: selfhosted-guardtest
+        home: /home/selfhosted-guardtest
+        create_home: true

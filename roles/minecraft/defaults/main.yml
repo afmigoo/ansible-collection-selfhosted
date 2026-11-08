@@ -5,8 +5,11 @@ minecraft_enable: false
 # You must accept the Minecraft EULA (https://aka.ms/MinecraftEULA) yourself; the role fails until this is true
 minecraft_eula: false
 
-# Service user, container and unit name; data lives in /var/lib/<name>/data
+# Container and unit name; data lives in /var/lib/selfhosted/<name>/data, owned by minecraft_user
 minecraft_name: minecraft
+
+# System account that owns the server, passed to the container role as container_user
+minecraft_user: selfhosted-{{ minecraft_name }}
 
 # Paper server jar, downloaded while the image builds and checked against its sha256
 minecraft_paper_url: https://fill-data.papermc.io/v1/objects/542288423062864e56969a44c6927b860152cb827c65ff5f841178602bc99e9a/paper-26.1.2-71.jar

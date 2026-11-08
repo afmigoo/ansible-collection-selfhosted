@@ -5,13 +5,13 @@
     - name: Look up the service user
       ansible.builtin.getent:
         database: passwd
-        key: "{{ container_name }}"
+        key: "{{ container_user }}"
 
     - name: Check the service as its user
       become: true
-      become_user: "{{ container_name }}"
+      become_user: "{{ container_user }}"
       environment:
-        XDG_RUNTIME_DIR: /run/user/{{ ansible_facts.getent_passwd[container_name][1] }}
+        XDG_RUNTIME_DIR: /run/user/{{ ansible_facts.getent_passwd[container_user][1] }}
       block:
         # A service that was just (re)started may still be activating
         - name: Read the service state

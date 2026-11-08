@@ -4,9 +4,9 @@ argument_specs:
     short_description: Run a Paper Minecraft server in rootless podman
     description:
       - Builds a Paper image on the host (mcrcon built from source, the Paper jar checked against its sha256, Eclipse
-        Temurin 25 JRE) and runs it with afmigoo.selfhosted.container as the system user minecraft_name.
-      - Writes eula.txt and the server.properties keys in minecraft_properties to /var/lib/<name>/data before the
-        server starts, and restarts it when they change.
+        Temurin 25 JRE) and runs it with afmigoo.selfhosted.container as the system account minecraft_user.
+      - Writes eula.txt and the server.properties keys in minecraft_properties to /var/lib/selfhosted/<name>/data
+        before the server starts, and restarts it when they change.
       - Needs podman >= 4.4 on the host (e.g. from afmigoo.provision.podman). Opening the port in the
         firewall is up to you.
     author: afmigoo
@@ -22,7 +22,11 @@ argument_specs:
       minecraft_name:
         type: str
         default: minecraft
-        description: Service user, container and unit name; data lives in /var/lib/<name>/data.
+        description: Container and unit name; data lives in /var/lib/selfhosted/<name>/data, owned by minecraft_user.
+      minecraft_user:
+        type: str
+        default: selfhosted-{{ minecraft_name }}
+        description: System account that owns the server, passed to the container role as container_user.
       minecraft_paper_url:
         type: str
         default: https://fill-data.papermc.io/v1/objects/542288423062864e56969a44c6927b860152cb827c65ff5f841178602bc99e9a/paper-26.1.2-71.jar
@@ -71,7 +75,11 @@ argument_specs:
       minecraft_name:
         type: str
         default: minecraft
-        description: Service user, container and unit name.
+        description: Container and unit name.
+      minecraft_user:
+        type: str
+        default: selfhosted-{{ minecraft_name }}
+        description: System account that owns the server, used to probe it.
       minecraft_port:
         type: int
         default: 25565

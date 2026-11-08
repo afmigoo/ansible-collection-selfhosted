@@ -21,7 +21,7 @@
 
 - name: Set the server's paths and managed properties
   ansible.builtin.set_fact:
-    _minecraft_data_dir: /var/lib/{{ minecraft_name }}/data
+    _minecraft_data_dir: /var/lib/selfhosted/{{ minecraft_name }}/data
     # One backslash, for escaping server.properties values without fighting Jinja's string escapes
     _minecraft_bs: "\\"
     # The container side of the port mapping is fixed. The RCON password gets its own task, so it can stay out of logs

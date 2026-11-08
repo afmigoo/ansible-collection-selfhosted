@@ -4,8 +4,9 @@ argument_specs:
     short_description: Run one container as a rootless podman Quadlet unit
     description:
       - Library role for app roles, which include it with include_role and vars; it does nothing unless container_enable.
-      - Creates a system user named container_name (home /var/lib/<name>) with a subuid/subgid range and lingering,
-        pulls container_image or builds container_build as that user, writes the Quadlet unit to
+      - Creates container_user (home container_base_dir/container_name) with a subuid/subgid range and lingering if
+        it doesn't exist yet, refusing to touch an account that already exists under a different home, pulls
+        container_image or builds container_build as that user, writes the Quadlet unit to
         ~/.config/containers/systemd/<name>.container and starts it in the user's systemd.
       - Needs podman >= 4.4 (Quadlet) on the host; it doesn't install it. Firewall rules and port redirects are
         out of scope.
@@ -18,7 +19,19 @@ argument_specs:
       container_name:
         type: str
         required: true
-        description: Name of the service user, its home (/var/lib/<name>), the container and the systemd unit.
+        description: Name of the container and the systemd unit; also the default suffix of container_user.
+      container_user:
+        type: str
+        default: selfhosted-{{ container_name }}
+        description:
+          - System account that owns the container, home container_base_dir/container_name. Namespaced by default so
+            it can't collide with a distro account or another service's user.
+          - If the account already exists with a different home, the role fails instead of touching it; pick another
+            container_user or container_name.
+      container_base_dir:
+        type: str
+        default: /var/lib/selfhosted
+        description: Base directory for container_user's home (container_base_dir/container_name); created root:root, 0755.
       container_image:
         type: str
         default: ""
@@ -81,7 +94,9 @@ argument_specs:
   user:
     short_description: Create a container's service user
     description:
-      - Creates the system user container_name (home /var/lib/<name>), gives it a subuid/subgid range and enables lingering.
+      - Creates container_user (home container_base_dir/container_name) if it doesn't exist yet, gives it a
+        subuid/subgid range and enables lingering. Refuses to touch an account that already exists under a
+        different home.
       - main runs this too. App roles call it first (tasks_from user) when they need the user to own files before the
         container starts.
     author: afmigoo
@@ -89,7 +104,19 @@ argument_specs:
       container_name:
         type: str
         required: true
-        description: Name of the service user.
+        description: Name of the container; also the default suffix of container_user.
+      container_user:
+        type: str
+        default: selfhosted-{{ container_name }}
+        description:
+          - System account that owns the container, home container_base_dir/container_name. Namespaced by default so
+            it can't collide with a distro account or another service's user.
+          - If the account already exists with a different home, the role fails instead of touching it; pick another
+            container_user or container_name.
+      container_base_dir:
+        type: str
+        default: /var/lib/selfhosted
+        description: Base directory for container_user's home (container_base_dir/container_name); created root:root, 0755.
       container_subid_start:
         type: int
         default: 100000
@@ -107,4 +134,8 @@ argument_specs:
       container_name:
         type: str
         required: true
-        description: Name of the container (and of its service user and unit).
+        description: Name of the container (and of its systemd unit).
+      container_user:
+        type: str
+        default: selfhosted-{{ container_name }}
+        description: System account the container runs as.

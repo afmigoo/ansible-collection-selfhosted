@@ -12,6 +12,7 @@
   vars:
     container_enable: true
     container_name: "{{ minecraft_name }}"
+    container_user: "{{ minecraft_user }}"
     container_build:
       containerfile: "{{ _minecraft_containerfile }}"
     container_ports: ["{{ minecraft_port }}:25565/tcp"]

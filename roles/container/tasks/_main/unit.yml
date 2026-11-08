@@ -1,7 +1,7 @@
 ---
 - name: Write the unit as the service user
   become: true
-  become_user: "{{ container_name }}"
+  become_user: "{{ container_user }}"
   environment:
     XDG_RUNTIME_DIR: "{{ _container_runtime_dir }}"
   block:

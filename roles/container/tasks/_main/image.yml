@@ -1,13 +1,13 @@
 ---
 - name: Pull or build as the service user
   become: true
-  become_user: "{{ container_name }}"
+  become_user: "{{ container_user }}"
   environment:
     XDG_RUNTIME_DIR: "{{ _container_runtime_dir }}"
   block:
     - name: Pull the image
       containers.podman.podman_image:
-        name: "{{ container_image }}"
+        name: "{{ _container_image }}"
         state: present
       when: container_image | length > 0
       notify: Restart the container service
@@ -42,8 +42,7 @@
         # force covers changed context files
         - name: Build the image
           containers.podman.podman_image:
-            name: localhost/{{ container_name }}
-            tag: latest
+            name: "{{ _container_image }}"
             path: "{{ _container_home }}/build"
             build:
               file: "{{ _container_home }}/build/Containerfile"

@@ -10,7 +10,7 @@ container a Quadlet unit in that user's systemd.
 
 | Role | What it does |
 |------|--------------|
-| `afmigoo.selfhosted.container` | Library role for the app roles: one container per call. Creates the service user (home `/var/lib/<name>`) with a subuid/subgid range and lingering, pulls or builds the image as that user, writes the Quadlet unit and starts it |
+| `afmigoo.selfhosted.container` | Library role for the app roles: one container per call. Creates the service account `container_user` (default `selfhosted-<name>`, home `container_base_dir/<name>`, default base dir `/var/lib/selfhosted`) with a subuid/subgid range and lingering, pulls or builds the image as that user, writes the Quadlet unit and starts it |
 | `afmigoo.selfhosted.minecraft` | Paper Minecraft server. Builds its image on the host (mcrcon from source, the Paper jar checked against its sha256, Eclipse Temurin 25 JRE), manages `eula.txt` and chosen `server.properties` keys, runs it with `container` |
 
 Every role is opt-in: it does nothing unless `<role>_enable: true`. Options are
@@ -71,19 +71,22 @@ Install podman with `afmigoo.provision`, then run the server:
     - role: afmigoo.selfhosted.minecraft
 ```
 
-The world and config live in `/var/lib/minecraft/data`, owned by the
-`minecraft` system user. Only the keys in `minecraft_properties` are managed
-(Paper rewrites `server.properties` and keeps the rest); changing one restarts
-the server. `server-port` stays 25565 inside the container, `minecraft_port` is
-the host side. A new `minecraft_paper_url`/`minecraft_paper_sha256` pair
-rebuilds the image and restarts the server.
+The world and config live in `/var/lib/selfhosted/minecraft/data`, owned by
+the `selfhosted-minecraft` system account (`minecraft_user`, namespaced by
+default so it can't collide with another account). Only the keys in
+`minecraft_properties` are managed (Paper rewrites `server.properties` and
+keeps the rest); changing one restarts the server. `server-port` stays 25565
+inside the container, `minecraft_port` is the host side. A new
+`minecraft_paper_url`/`minecraft_paper_sha256` pair rebuilds the image and
+restarts the server.
 
-Manage the server as its user (it has no login shell):
+Manage the server as its account (it has no login shell); the container and
+unit keep the plain name `minecraft`:
 
 ```sh
-sudo -u minecraft XDG_RUNTIME_DIR=/run/user/$(id -u minecraft) systemctl --user status minecraft
-sudo -u minecraft XDG_RUNTIME_DIR=/run/user/$(id -u minecraft) journalctl --user -u minecraft -f
-sudo -u minecraft XDG_RUNTIME_DIR=/run/user/$(id -u minecraft) podman exec minecraft mcrcon list   # with RCON
+sudo -u selfhosted-minecraft XDG_RUNTIME_DIR=/run/user/$(id -u selfhosted-minecraft) systemctl --user status minecraft
+sudo -u selfhosted-minecraft XDG_RUNTIME_DIR=/run/user/$(id -u selfhosted-minecraft) journalctl --user -u minecraft -f
+sudo -u selfhosted-minecraft XDG_RUNTIME_DIR=/run/user/$(id -u selfhosted-minecraft) podman exec minecraft mcrcon list   # with RCON
 ```
 
 RCON listens on 25575 inside the container only; the container gets the
@@ -102,7 +105,9 @@ with its inputs as `vars:` and `apply: tags:` so the app's tags reach it:
       tags: [myapp]
   vars:
     container_enable: true
-    container_name: myapp                       # user, home /var/lib/myapp, container and unit
+    container_name: myapp                       # container and unit name
+    # container_user: selfhosted-myapp           # default; home container_base_dir/myapp
+    # container_base_dir: /var/lib/selfhosted    # default
     container_image: docker.io/library/nginx:1.29
     # or build on the host instead (tagged localhost/myapp:latest):
     # container_build:
@@ -110,7 +115,7 @@ with its inputs as `vars:` and `apply: tags:` so the app's tags reach it:
     #   files: {entrypoint.sh: "..."}                 # extra build context files
     container_ports: ["8080:80/tcp"]
     container_bind: 127.0.0.1                   # default 0.0.0.0
-    container_volumes: ["/var/lib/myapp/data:/data"]
+    container_volumes: ["/var/lib/selfhosted/myapp/data:/data"]
     container_env: {TZ: UTC}
     container_secret_env: {API_TOKEN: "{{ vault_myapp_token }}"}   # 0600 EnvironmentFile
     container_extra: ["PodmanArgs=--stop-timeout=30"]              # raw [Container] lines
@@ -118,10 +123,16 @@ with its inputs as `vars:` and `apply: tags:` so the app's tags reach it:
   tags: [myapp]
 ```
 
-The unit lands in `/var/lib/<name>/.config/containers/systemd/<name>.container`.
-A changed unit, image or secret env file restarts the service. When the app
-role has to write files the user owns before the container first starts, it
-creates the user first with `tasks_from: user` (as `minecraft` does).
+The service account is `container_user` (default `selfhosted-<name>`), home
+`container_base_dir/<name>` (default `/var/lib/selfhosted/<name>`); the
+container and unit keep the plain `container_name`. If that account already
+exists with a different home (e.g. a package's own `myapp` user), the role
+fails instead of touching it — pick another `container_user` or
+`container_name`. The unit lands in
+`<home>/.config/containers/systemd/<name>.container`. A changed unit, image or
+secret env file restarts the service. When the app role has to write files the
+user owns before the container first starts, it creates the user first with
+`tasks_from: user` (as `minecraft` does).
 
 ## Development
 
@@ -146,7 +157,9 @@ converge, idempotence, then the role's `verification` entry point on all of them
 at once, and destroys them.
 
 - `container` runs a pulled busybox httpd (1 vCPU each, 1 GiB for Debian, 2 GiB
-  for Ubuntu: 3 vCPU, 5 GiB).
+  for Ubuntu: 3 vCPU, 5 GiB). It also checks the foreign-account guard: `prepare.yml`
+  creates a plain user whose name collides with a default `container_user`, and
+  `verify.yml` asserts the role refuses to touch it.
 - `minecraft` builds the Paper image and starts the server with a 1 GiB heap
   (2 vCPU and 2.25 GiB each: 6 vCPU, 6.75 GiB). Its first start downloads and
   patches the server, so the run takes a while.

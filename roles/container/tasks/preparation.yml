@@ -29,7 +29,6 @@
       {{ __container_podman_version.stderr | default('') }}. Install it first (e.g. with afmigoo.provision.podman).
     quiet: true
 
-- name: Set the paths for this container
+- name: Set the image for this container
   ansible.builtin.set_fact:
-    _container_home: /var/lib/{{ container_name }}
     _container_image: "{{ container_image if container_image | length > 0 else 'localhost/' ~ container_name ~ ':latest' }}"

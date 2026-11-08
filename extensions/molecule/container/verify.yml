@@ -9,3 +9,63 @@
         name: afmigoo.selfhosted.container
         tasks_from: verification
         vars_from: test
+
+    # prepare.yml created selfhosted-guardtest with home /home/selfhosted-guardtest, which collides with
+    # container_name "guardtest"'s default container_user. The role must refuse to touch it instead of
+    # usermod'ing, granting subuids or enabling linger for someone else's account.
+    # useradd may have given it a subuid/subgid range of its own when prepare.yml created it (regular, non-system
+    # users get one by default on Debian/Ubuntu); snapshot it now so the guard check can tell it apart from a
+    # range the role would add
+    - name: Snapshot the foreign account's subuid entry before the guard runs
+      ansible.builtin.command: grep '^selfhosted-guardtest:' /etc/subuid
+      register: __guardtest_subuid_before
+      changed_when: false
+      failed_when: false
+
+    - name: Check the foreign-account guard
+      block:
+        - name: Run the container role's user entry point over the foreign account
+          ansible.builtin.include_role:
+            name: afmigoo.selfhosted.container
+            tasks_from: user
+          vars:
+            container_name: guardtest
+
+        - name: Fail because the guard did not stop the role
+          ansible.builtin.fail:
+            msg: The role touched selfhosted-guardtest instead of refusing it.
+      rescue:
+        - name: Check the role failed with the guard's message
+          ansible.builtin.assert:
+            that:
+              - "'selfhosted-guardtest' in ansible_failed_result.msg"
+              - "'/home/selfhosted-guardtest' in ansible_failed_result.msg"
+            fail_msg: "Unexpected failure, not the guard: {{ ansible_failed_result.msg | default(ansible_failed_result) }}"
+            quiet: true
+
+        - name: Look up the foreign account again
+          ansible.builtin.getent:
+            database: passwd
+            key: selfhosted-guardtest
+
+        - name: Check its home is unchanged
+          ansible.builtin.assert:
+            that:
+              - ansible_facts.getent_passwd['selfhosted-guardtest'][4] == '/home/selfhosted-guardtest'
+            fail_msg: "selfhosted-guardtest's home changed: {{ ansible_facts.getent_passwd['selfhosted-guardtest'] }}"
+            quiet: true
+
+        - name: Check /etc/subuid again
+          ansible.builtin.command: grep '^selfhosted-guardtest:' /etc/subuid
+          register: __guardtest_subuid_after
+          changed_when: false
+          failed_when: false
+
+        - name: Check /etc/subuid is unchanged
+          ansible.builtin.assert:
+            that:
+              - __guardtest_subuid_after.stdout == __guardtest_subuid_before.stdout
+            fail_msg: >-
+              /etc/subuid's selfhosted-guardtest entry changed: was '{{ __guardtest_subuid_before.stdout }}',
+              now '{{ __guardtest_subuid_after.stdout }}'.
+            quiet: true

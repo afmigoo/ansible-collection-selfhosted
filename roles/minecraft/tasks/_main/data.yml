@@ -2,27 +2,27 @@
 - name: Look up the service user
   ansible.builtin.getent:
     database: passwd
-    key: "{{ minecraft_name }}"
+    key: "{{ minecraft_user }}"
     fail_key: false
 
 # In check mode a new user doesn't exist yet to own the files
 - name: Write the data files
-  when: (ansible_facts.getent_passwd | default({}))[minecraft_name] | default(none) is not none
+  when: (ansible_facts.getent_passwd | default({}))[minecraft_user] | default(none) is not none
   block:
     - name: Create the data dir
       ansible.builtin.file:
         path: "{{ _minecraft_data_dir }}"
         state: directory
-        owner: "{{ minecraft_name }}"
-        group: "{{ minecraft_name }}"
+        owner: "{{ minecraft_user }}"
+        group: "{{ minecraft_user }}"
         mode: "0750"
 
     - name: Accept the EULA
       ansible.builtin.copy:
         content: "eula=true\n"
         dest: "{{ _minecraft_data_dir }}/eula.txt"
-        owner: "{{ minecraft_name }}"
-        group: "{{ minecraft_name }}"
+        owner: "{{ minecraft_user }}"
+        group: "{{ minecraft_user }}"
         mode: "0644"
       register: __minecraft_eula
 
@@ -37,8 +37,8 @@
              | replace('=', _minecraft_bs ~ '=') | replace(':', _minecraft_bs ~ ':')
              | replace('#', _minecraft_bs ~ '#') | replace('!', _minecraft_bs ~ '!') }}
         create: true
-        owner: "{{ minecraft_name }}"
-        group: "{{ minecraft_name }}"
+        owner: "{{ minecraft_user }}"
+        group: "{{ minecraft_user }}"
         mode: "0644"
       vars:
         __minecraft_value: >-
@@ -59,8 +59,8 @@
              | replace('=', _minecraft_bs ~ '=') | replace(':', _minecraft_bs ~ ':')
              | replace('#', _minecraft_bs ~ '#') | replace('!', _minecraft_bs ~ '!') }}
         create: true
-        owner: "{{ minecraft_name }}"
-        group: "{{ minecraft_name }}"
+        owner: "{{ minecraft_user }}"
+        group: "{{ minecraft_user }}"
         mode: "0644"
       when: minecraft_enable_rcon | bool
       no_log: true

@@ -15,6 +15,7 @@
           tags: [minecraft, minecraft_data]
       vars:
         container_name: "{{ minecraft_name }}"
+        container_user: "{{ minecraft_user }}"
       tags: [minecraft, minecraft_data]
 
     - name: Data

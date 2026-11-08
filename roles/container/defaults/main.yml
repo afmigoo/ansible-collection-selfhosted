@@ -2,7 +2,16 @@
 # Master gate, the role does nothing unless enabled. App roles turn it on when they include this role
 container_enable: false
 
-# container_name has no default: it is required, and names the service user, its home (/var/lib/<name>) and the unit
+# container_name has no default: it is required, and names the container, the unit and (via container_user) its service
+# account
+
+# The system account that owns this container. Namespaced by default so it can't collide with a distro account or
+# another service's user (e.g. a plain "postgres"); the role refuses to touch an existing account under another home
+container_user: selfhosted-{{ container_name }}
+
+# Home of container_user is {{ container_base_dir }}/{{ container_name }}; the role creates this base dir itself
+# (root:root, 0755) before creating the user
+container_base_dir: /var/lib/selfhosted
 
 # Exactly one of the two: an image to pull, or a Containerfile to build on the host as the service user
 container_image: ""
