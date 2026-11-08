@@ -1,0 +1,76 @@
+---
+# Static checks only: the Molecule scenarios need vagrant-libvirt VMs and run locally (make test)
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: ansible-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: make install
+      - run: make lint
+
+  build:
+    name: Build and install the collection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: make build
+      # Installs the tarball and its galaxy.yml dependencies away from the source tree, so the syntax check only
+      # sees what the tarball ships
+      - name: Syntax-check the playbooks from the installed collection
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ runner.temp }}/collections
+        run: |
+          ansible-galaxy collection install afmigoo-selfhosted-*.tar.gz -p "$ANSIBLE_COLLECTIONS_PATH"
+          playbooks=$(basename -s .yml playbooks/*.yml)
+          cd "$RUNNER_TEMP"
+          for playbook in $playbooks; do
+            ansible-playbook -i localhost, --syntax-check "afmigoo.selfhosted.$playbook"
+          done
+
+  meta:
+    name: Secrets, workflows and changelog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # gitleaks scans the whole history of this branch
+          persist-credentials: false
+      - name: gitleaks
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo --log-opts=HEAD --redact --verbose
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
+      - name: zizmor
+        run: pipx run zizmor==1.31.1 --format github .
+      - name: The galaxy.yml version has a changelog entry
+        run: |
+          version=$(sed -n 's/^version: //p' galaxy.yml)
+          grep -qx "## $version" CHANGELOG.md || { echo "::error file=CHANGELOG.md::No '## $version' heading"; exit 1; }

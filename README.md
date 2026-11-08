@@ -26,6 +26,21 @@ as dependencies, so playbooks order them; app roles include `container`
 themselves. Opening ports in the firewall is up to you (e.g.
 `harden_ufw_allowed_ports` in `afmigoo.provision.harden`).
 
+### Playbooks
+
+| Playbook | Roles |
+|----------|-------|
+| `afmigoo.selfhosted.minecraft` | `minecraft` |
+| `afmigoo.selfhosted.verify` | the `verification` entry point of every app role whose `<role>_enable` is true |
+
+They target `all` unless `selfhosted_hosts` is set, and enable their roles
+themselves. Podman has to be on the host already (e.g. `afmigoo.provision.podman`),
+since this collection doesn't depend on `afmigoo.provision`:
+
+```sh
+ansible-playbook afmigoo.selfhosted.minecraft -e minecraft_eula=true -e selfhosted_hosts=minecraft
+```
+
 ## Install
 
 ```sh
