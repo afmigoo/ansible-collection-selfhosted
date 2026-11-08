@@ -29,11 +29,11 @@ argument_specs:
         description: System account that owns the server, passed to the container role as container_user.
       minecraft_paper_url:
         type: str
-        default: https://fill-data.papermc.io/v1/objects/542288423062864e56969a44c6927b860152cb827c65ff5f841178602bc99e9a/paper-26.1.2-71.jar
+        default: https://fill-data.papermc.io/v1/objects/9601f9a26a2a52a0f2c807cf1abf691f96ee4fb287878313b601cebc2c51eabf/paper-26.3-244.jar
         description: Paper server jar to download while building the image (https://papermc.io/downloads/paper).
       minecraft_paper_sha256:
         type: str
-        default: 542288423062864e56969a44c6927b860152cb827c65ff5f841178602bc99e9a
+        default: 9601f9a26a2a52a0f2c807cf1abf691f96ee4fb287878313b601cebc2c51eabf
         description: sha256 of the jar; the build fails if it doesn't match.
       minecraft_mcrcon_version:
         type: str

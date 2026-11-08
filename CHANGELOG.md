@@ -15,8 +15,11 @@ Unreleased.
   `container_name` alone.
 - New role `minecraft`: a Paper server whose image is built on the host (mcrcon from source, the Paper jar checked
   against its sha256, Eclipse Temurin 25 JRE). It requires `minecraft_eula: true`, manages `eula.txt` and the
-  `server.properties` keys in `minecraft_properties`, and can enable RCON inside the container. Its data lives in
+  `server.properties` keys in `minecraft_properties`, and can enable RCON inside the container. Paper 26.3 build 244. Its data lives in
   `/var/lib/selfhosted/<minecraft_name>/data`, owned by `minecraft_user` (default `selfhosted-<minecraft_name>`),
   which it passes to `container` as `container_user`.
 - Molecule scenarios `container` and `minecraft` on Debian 13, Ubuntu 24.04 and 26.04. `container` also checks that
   the role refuses to touch a foreign account whose name collides with a default `container_user`.
+- Playbooks `afmigoo.selfhosted.minecraft` and `afmigoo.selfhosted.verify`.
+- CI on GitHub Actions, as in afmigoo.provision: ansible-lint, building and installing the collection and
+  syntax-checking its playbooks, gitleaks, actionlint, zizmor and a changelog check. Dependabot for pip and actions.
