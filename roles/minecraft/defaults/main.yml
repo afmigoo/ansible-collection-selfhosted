@@ -11,9 +11,10 @@ minecraft_name: minecraft
 # System account that owns the server, passed to the container role as container_user
 minecraft_user: selfhosted-{{ minecraft_name }}
 
-# Paper server jar, downloaded while the image builds and checked against its sha256
-minecraft_paper_url: https://fill-data.papermc.io/v1/objects/9601f9a26a2a52a0f2c807cf1abf691f96ee4fb287878313b601cebc2c51eabf/paper-26.3-244.jar
-minecraft_paper_sha256: 9601f9a26a2a52a0f2c807cf1abf691f96ee4fb287878313b601cebc2c51eabf
+# Server software: paper or fabric
+minecraft_backend: paper
+# Keys merged over the backend's defaults (see meta/argument_specs.yml), e.g. {loader_version: 0.20.1, mods: [...]}
+minecraft_backend_spec: {}
 # mcrcon git tag, built from source into the image
 minecraft_mcrcon_version: v0.7.2
 
@@ -22,7 +23,7 @@ minecraft_memory: 2G
 # Host port; the server listens on 25565 inside the container
 minecraft_port: 25565
 
-# server.properties keys to manage, one line each; Paper keeps every other key as it wrote it
+# server.properties keys to manage, one line each; the server keeps every other key as it wrote it
 minecraft_properties: {}
 
 # RCON inside the container (not published): `podman exec <name> mcrcon <command>` as the service user

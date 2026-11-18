@@ -26,7 +26,7 @@
         mode: "0644"
       register: __minecraft_eula
 
-    # Paper rewrites server.properties on every start but keeps the values, escaped the way Java's Properties
+    # The server rewrites server.properties on every start but keeps the values, escaped the way Java's Properties
     # escapes them (\ = : # ! get a backslash), so write them that way to stay idempotent
     - name: Set the managed server.properties keys
       ansible.builtin.lineinfile:
@@ -65,3 +65,30 @@
       when: minecraft_enable_rcon | bool
       no_log: true
       register: __minecraft_rcon
+
+    # Fabric loads every jar in data/mods. The role only downloads the listed ones and leaves other jars alone;
+    # without a sha256 an existing file is kept as it is
+    - name: Download the mods
+      when: minecraft_backend == 'fabric'
+      block:
+        - name: Create the mods dir
+          ansible.builtin.file:
+            path: "{{ _minecraft_data_dir }}/mods"
+            state: directory
+            owner: "{{ minecraft_user }}"
+            group: "{{ minecraft_user }}"
+            mode: "0755"
+
+        - name: Download the mods
+          ansible.builtin.get_url:
+            url: "{{ __minecraft_mod.url }}"
+            dest: "{{ _minecraft_data_dir }}/mods/{{ __minecraft_mod.url | urlsplit('path') | basename }}"
+            checksum: "{{ ('sha256:' ~ __minecraft_mod.sha256) if __minecraft_mod.sha256 is defined else omit }}"
+            owner: "{{ minecraft_user }}"
+            group: "{{ minecraft_user }}"
+            mode: "0644"
+          loop: "{{ _minecraft_spec.mods }}"
+          loop_control:
+            loop_var: __minecraft_mod
+            label: "{{ __minecraft_mod.url }}"
+          register: __minecraft_mods

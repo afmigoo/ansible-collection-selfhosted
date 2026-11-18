@@ -4,7 +4,7 @@ minecraft_enable: true
 minecraft_eula: true
 minecraft_memory: 1G
 minecraft_properties:
-  # Escaped by Paper when it rewrites the file; idempotence checks that the role writes it the same way
+  # Escaped by the server when it rewrites the file; idempotence checks that the role writes it the same way
   motd: "Molecule: test #1"
   max-players: 5
   online-mode: false

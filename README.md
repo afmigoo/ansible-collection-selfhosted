@@ -11,7 +11,7 @@ container a Quadlet unit in that user's systemd.
 | Role | What it does |
 |------|--------------|
 | `afmigoo.selfhosted.container` | Library role for the app roles: one container per call. Creates the service account `container_user` (default `selfhosted-<name>`, home `container_base_dir/<name>`, default base dir `/var/lib/selfhosted`) with a subuid/subgid range and lingering, pulls or builds the image as that user, writes the Quadlet unit and starts it |
-| `afmigoo.selfhosted.minecraft` | Paper Minecraft server. Builds its image on the host (mcrcon from source, the Paper jar checked against its sha256, Eclipse Temurin 25 JRE), manages `eula.txt` and chosen `server.properties` keys, runs it with `container` |
+| `afmigoo.selfhosted.minecraft` | Paper or Fabric Minecraft server. Builds its image on the host (mcrcon from source, Eclipse Temurin 25 JRE; the Paper jar or the Fabric installer checked against its sha256), downloads Fabric mods, manages `eula.txt` and chosen `server.properties` keys, runs it with `container` |
 
 Every role is opt-in: it does nothing unless `<role>_enable: true`. Options are
 documented in each role's `meta/argument_specs.yml` (`ansible-doc -t role
@@ -73,6 +73,12 @@ Install podman with `afmigoo.provision`, then run the server:
     podman_enable: true
     minecraft_enable: true
     minecraft_eula: true            # you accept https://aka.ms/MinecraftEULA
+    minecraft_backend: fabric       # default paper
+    minecraft_backend_spec:         # merged over the backend's pinned defaults
+      loader_version: "0.20.1"
+      mods:
+        - url: https://cdn.modrinth.com/data/P7dR8mSH/versions/Zns5SSRA/fabric-api-0.166.2%2B26.3.jar
+          sha256: e8acacc7836f39237c83c2a664b039647ee36f93822797acc40cda44666002ea   # optional
     minecraft_memory: 3G
     minecraft_port: 25565
     minecraft_properties:
@@ -89,11 +95,26 @@ Install podman with `afmigoo.provision`, then run the server:
 The world and config live in `/var/lib/selfhosted/minecraft/data`, owned by
 the `selfhosted-minecraft` system account (`minecraft_user`, namespaced by
 default so it can't collide with another account). Only the keys in
-`minecraft_properties` are managed (Paper rewrites `server.properties` and
+`minecraft_properties` are managed (the server rewrites `server.properties` and
 keeps the rest); changing one restarts the server. `server-port` stays 25565
-inside the container, `minecraft_port` is the host side. A new
-`minecraft_paper_url`/`minecraft_paper_sha256` pair rebuilds the image and
-restarts the server.
+inside the container, `minecraft_port` is the host side.
+
+`minecraft_backend_spec` overrides single keys of the backend's defaults; a key
+the backend doesn't have fails the role. Paper takes `url` and `sha256` of the
+server jar. Fabric takes `game_version`, `loader_version`, `installer_version`
+and `installer_sha256` (the installer runs while the image builds), quoted as
+strings, and `mods`. A changed spec rebuilds the image and restarts the server
+(`ansible-doc -t role afmigoo.selfhosted.minecraft` lists the defaults).
+
+Each mod is downloaded to `data/mods` under the URL's file name, checked
+against its `sha256` when given; without one an existing file is kept. The role
+never deletes jars, so removing a mod from the list leaves its jar in place, and
+jars you add by hand stay. A download restarts the server. `mods` is empty by
+default, so most mods also need Fabric API listed.
+
+Paper and Fabric keep the Nether and the End in different folders, so switching
+`minecraft_backend` on an existing world hides those dimensions until you move
+them yourself.
 
 Manage the server as its account (it has no login shell); the container and
 unit keep the plain name `minecraft`:
@@ -175,9 +196,10 @@ at once, and destroys them.
   for Ubuntu: 3 vCPU, 5 GiB). It also checks the foreign-account guard: `prepare.yml`
   creates a plain user whose name collides with a default `container_user`, and
   `verify.yml` asserts the role refuses to touch it.
-- `minecraft` builds the Paper image and starts the server with a 1 GiB heap
-  (2 vCPU and 2.25 GiB each: 6 vCPU, 6.75 GiB). Its first start downloads and
-  patches the server, so the run takes a while.
+- `minecraft` builds the server image and starts it with a 1 GiB heap
+  (2 vCPU and 2.25 GiB each: 6 vCPU, 6.75 GiB): Fabric with two mods on Debian
+  (host_vars in its `molecule.yml`), Paper on Ubuntu. Its first start downloads
+  and patches the server, so the run takes a while.
 
 ```sh
 make test-minecraft         # one scenario (molecule test -s minecraft)

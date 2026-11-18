@@ -24,5 +24,7 @@
     # Give the server time to save the world when the service stops
     container_extra:
       - PodmanArgs=--stop-timeout=60
-    container_restart: "{{ __minecraft_eula is changed or __minecraft_properties is changed or __minecraft_rcon is changed }}"
+    container_restart: >-
+      {{ __minecraft_eula is changed or __minecraft_properties is changed or __minecraft_rcon is changed
+         or __minecraft_mods is changed }}
   tags: [minecraft, minecraft_container]
