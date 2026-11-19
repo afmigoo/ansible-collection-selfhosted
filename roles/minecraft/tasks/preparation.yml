@@ -11,18 +11,18 @@
 - name: Check the backend
   ansible.builtin.assert:
     that:
-      - minecraft_backend in _minecraft_backend_defaults
+      - minecraft_backend in _minecraft_backend_spec_defaults
       - minecraft_backend_spec is mapping
-      - minecraft_backend_spec.keys() | difference(_minecraft_backend_defaults[minecraft_backend].keys()) | length == 0
+      - minecraft_backend_spec.keys() | difference(_minecraft_backend_spec_defaults[minecraft_backend].keys()) | length == 0
     fail_msg: >-
-      minecraft_backend must be one of {{ _minecraft_backend_defaults.keys() | join(', ') }} (got {{ minecraft_backend }}),
+      minecraft_backend must be one of {{ _minecraft_backend_spec_defaults.keys() | join(', ') }} (got {{ minecraft_backend }}),
       and minecraft_backend_spec a dict with only these keys:
-      {{ (_minecraft_backend_defaults[minecraft_backend] | default({})).keys() | join(', ') }}.
+      {{ (_minecraft_backend_spec_defaults[minecraft_backend] | default({})).keys() | join(', ') }}.
     quiet: true
 
 - name: Merge the backend spec
   ansible.builtin.set_fact:
-    _minecraft_spec: "{{ _minecraft_backend_defaults[minecraft_backend] | combine(minecraft_backend_spec) }}"
+    _minecraft_spec: "{{ _minecraft_backend_spec_defaults[minecraft_backend] | combine(minecraft_backend_spec) }}"
 
 - name: Check the inputs
   ansible.builtin.assert:

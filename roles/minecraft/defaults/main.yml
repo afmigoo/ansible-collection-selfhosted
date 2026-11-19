@@ -17,7 +17,7 @@ minecraft_backend: paper
 minecraft_backend_spec: {}
 # Private: the pinned defaults per backend, which minecraft_backend_spec overrides key by key. Set
 # minecraft_backend_spec instead of this
-_minecraft_backend_defaults:
+_minecraft_backend_spec_defaults:
   paper:
     url: https://fill-data.papermc.io/v1/objects/9601f9a26a2a52a0f2c807cf1abf691f96ee4fb287878313b601cebc2c51eabf/paper-26.3-244.jar
     sha256: 9601f9a26a2a52a0f2c807cf1abf691f96ee4fb287878313b601cebc2c51eabf
