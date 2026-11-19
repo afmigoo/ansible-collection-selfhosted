@@ -15,6 +15,22 @@ minecraft_user: selfhosted-{{ minecraft_name }}
 minecraft_backend: paper
 # Keys merged over the backend's defaults (see meta/argument_specs.yml), e.g. {loader_version: 0.20.1, mods: [...]}
 minecraft_backend_spec: {}
+# Private: the pinned defaults per backend, which minecraft_backend_spec overrides key by key. Set
+# minecraft_backend_spec instead of this
+_minecraft_backend_defaults:
+  paper:
+    url: https://fill-data.papermc.io/v1/objects/9601f9a26a2a52a0f2c807cf1abf691f96ee4fb287878313b601cebc2c51eabf/paper-26.3-244.jar
+    sha256: 9601f9a26a2a52a0f2c807cf1abf691f96ee4fb287878313b601cebc2c51eabf
+    template: Containerfile.paper.j2
+    template_args: {}
+  fabric:
+    game_version: "26.3"
+    loader_version: 0.20.1
+    installer_version: 1.1.2
+    installer_sha256: 61e035bf7bf70153e127440ce34de47c9036f0a2d0c65d1529454bd35ceefe4f
+    mods: []
+    template: Containerfile.fabric.j2
+    template_args: {}
 # mcrcon git tag, built from source into the image
 minecraft_mcrcon_version: v0.7.2
 

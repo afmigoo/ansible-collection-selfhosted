@@ -8,10 +8,6 @@
       Read it, then set minecraft_eula: true.
     quiet: true
 
-- name: Load the backend defaults
-  ansible.builtin.include_vars:
-    file: backends.yml
-
 - name: Check the backend
   ansible.builtin.assert:
     that:
