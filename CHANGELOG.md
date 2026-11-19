@@ -17,7 +17,8 @@ Unreleased.
   source, Eclipse Temurin 25 JRE). `minecraft_backend_spec` overrides single keys of the backend's pinned defaults:
   Paper 26.3 build 244, its jar checked against its sha256; Fabric 26.3 with loader 0.20.1, its installer 1.1.2
   checked against its sha256 and run while the image builds, and `mods`, a list of `{url, sha256}` downloaded to
-  `data/mods` (checked when a sha256 is given, never deleted). It requires `minecraft_eula: true`, manages `eula.txt`
+  `data/mods` (checked when a sha256 is given, never deleted). Each backend also takes `template`, its Containerfile
+  template, and `template_args`, extra variables for it. It requires `minecraft_eula: true`, manages `eula.txt`
   and the `server.properties` keys in `minecraft_properties`, and can enable RCON inside the container. Its data lives in
   `/var/lib/selfhosted/<minecraft_name>/data`, owned by `minecraft_user` (default `selfhosted-<minecraft_name>`),
   which it passes to `container` as `container_user`.

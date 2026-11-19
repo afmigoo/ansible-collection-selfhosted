@@ -2,7 +2,8 @@
 # Rendered here: a template lookup inside the container role would search that role's templates
 - name: Render the Containerfile
   ansible.builtin.set_fact:
-    _minecraft_containerfile: "{{ lookup('ansible.builtin.template', 'Containerfile.j2') }}"
+    _minecraft_containerfile: >-
+      {{ lookup('ansible.builtin.template', _minecraft_spec.template, template_vars=_minecraft_spec.template_args) }}
 
 - name: Run the server container
   ansible.builtin.include_role:

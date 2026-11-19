@@ -103,8 +103,11 @@ inside the container, `minecraft_port` is the host side.
 the backend doesn't have fails the role. Paper takes `url` and `sha256` of the
 server jar. Fabric takes `game_version`, `loader_version`, `installer_version`
 and `installer_sha256` (the installer runs while the image builds), quoted as
-strings, and `mods`. A changed spec rebuilds the image and restarts the server
-(`ansible-doc -t role afmigoo.selfhosted.minecraft` lists the defaults).
+strings, and `mods`. Both take `template`, the Containerfile template
+(`Containerfile.paper.j2` or `Containerfile.fabric.j2` in the role), and
+`template_args`, a dict of extra variables for it, so you can build the image
+from your own template. A changed spec rebuilds the image and restarts the
+server (`ansible-doc -t role afmigoo.selfhosted.minecraft` lists the defaults).
 
 Each mod is downloaded to `data/mods` under the URL's file name, checked
 against its `sha256` when given; without one an existing file is kept. The role

@@ -50,6 +50,11 @@ argument_specs:
           - "fabric: C(mods), a list of C({url, sha256}), default empty, so not even Fabric API. Each jar is downloaded
             to data/mods under the URL's file name and checked against its sha256 if given; without one an existing
             file is kept. Jars that aren't listed are left in place, and a download restarts the server."
+          - "Both: C(template), the Containerfile template (default Containerfile.paper.j2 or Containerfile.fabric.j2
+            from the role's templates; Ansible's usual template search also finds files next to the playbook, or give
+            an absolute path), and C(template_args), a dict whose keys become variables in that template (default
+            empty). The template sees the role's variables and the merged spec as _minecraft_spec. Start a custom one
+            from the role's own: it has to build mcrcon and pass JAVA_OPTS to java."
       minecraft_mcrcon_version:
         type: str
         default: v0.7.2

@@ -7,18 +7,6 @@ RUN apt-get update \
 RUN git clone --depth 1 --branch {{ minecraft_mcrcon_version }} https://github.com/Tiiffi/mcrcon.git /opt/mcrcon \
  && make -C /opt/mcrcon
 
-{% if minecraft_backend == 'paper' %}
-FROM docker.io/library/alpine:3 AS jar-downloader
-RUN wget -O /opt/paper.jar '{{ _minecraft_spec.url }}' \
- && echo '{{ _minecraft_spec.sha256 }}  /opt/paper.jar' | sha256sum -c -
-
-FROM docker.io/library/eclipse-temurin:25-jre
-WORKDIR /data
-COPY --from=jar-downloader /opt/paper.jar /opt/paper.jar
-COPY --from=rcon-builder /opt/mcrcon/mcrcon /usr/local/bin/mcrcon
-# exec, so java gets the stop signal and saves the world
-ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS:--Xms2G -Xmx2G} -jar /opt/paper.jar --nogui"]
-{% elif minecraft_backend == 'fabric' %}
 FROM docker.io/library/alpine:3 AS installer-downloader
 RUN wget -O /opt/fabric-installer.jar 'https://maven.fabricmc.net/net/fabricmc/fabric-installer/{{ _minecraft_spec.installer_version }}/fabric-installer-{{ _minecraft_spec.installer_version }}.jar' \
  && echo '{{ _minecraft_spec.installer_sha256 }}  /opt/fabric-installer.jar' | sha256sum -c -
@@ -37,4 +25,3 @@ COPY --from=rcon-builder /opt/mcrcon/mcrcon /usr/local/bin/mcrcon
 # exec, so java gets the stop signal and saves the world. The launcher looks for the game jar in the working
 # directory (/data) unless told where it is; mods load from /data/mods
 ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS:--Xms2G -Xmx2G} -Dfabric.gameJarPath=/opt/fabric/server.jar -jar /opt/fabric/fabric-server-launch.jar --nogui"]
-{% endif %}
