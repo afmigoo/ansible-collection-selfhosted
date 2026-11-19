@@ -208,6 +208,13 @@ the role's `verification` entry point on all of them at once, and destroys them.
   start downloads and patches the server, so the run takes a while.
 - `minecraft-fabric` does the same with the Fabric backend and two mods
   (`vars/test-fabric.yml`), on Debian 13 only (2 vCPU, 3 GiB).
+- `playbook-minecraft_full` tests the `minecraft_full` playbook with the roles
+  it pulls in from `afmigoo.provision`: no `prepare.yml`, so the playbook installs
+  podman on bare hosts, then the verify playbooks of both collections check
+  every role it ran. Playbook scenarios are named `playbook-<playbook>` and take
+  their vars from inventory, `group_vars/all/` in the scenario: a link to each
+  role's `vars/test.yml` plus what the dependency roles need. 2 vCPU and 3 GiB
+  each, like `minecraft`.
 
 ```sh
 make test-minecraft           # one scenario (molecule test -s minecraft)

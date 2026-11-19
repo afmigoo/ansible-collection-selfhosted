@@ -1,0 +1,7 @@
+---
+# Verifies every role the playbook ran: podman from afmigoo.provision, then minecraft
+- name: Verify podman
+  ansible.builtin.import_playbook: afmigoo.provision.verify
+
+- name: Verify minecraft
+  ansible.builtin.import_playbook: afmigoo.selfhosted.verify

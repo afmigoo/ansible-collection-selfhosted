@@ -23,7 +23,7 @@ Unreleased.
   `/var/lib/selfhosted/<minecraft_name>/data`, owned by `minecraft_user` (default `selfhosted-<minecraft_name>`),
   which it passes to `container` as `container_user`.
 - Molecule scenarios `container` and `minecraft` (Paper) on Debian 13, Ubuntu 24.04 and 26.04, and `minecraft-fabric`
-  (Fabric with two mods) on Debian 13. `container` also checks that
+  (Fabric with two mods) on Debian 13, and `playbook-minecraft_full` for that playbook on bare hosts. `container` also checks that
   the role refuses to touch a foreign account whose name collides with a default `container_user`.
 - Playbooks `afmigoo.selfhosted.minecraft` (the role only), `afmigoo.selfhosted.minecraft_full` (podman from
   `afmigoo.provision.podman`, then the role) and `afmigoo.selfhosted.verify`.

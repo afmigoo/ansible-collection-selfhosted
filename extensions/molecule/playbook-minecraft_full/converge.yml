@@ -1,0 +1,4 @@
+---
+# The playbook as users run it, on hosts without podman; the vars come from the scenario's group_vars
+- name: Converge
+  ansible.builtin.import_playbook: afmigoo.selfhosted.minecraft_full
