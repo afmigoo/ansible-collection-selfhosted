@@ -198,10 +198,10 @@ the role's `verification` entry point on all of them at once, and destroys them.
   creates a plain user whose name collides with a default `container_user`, and
   `verify.yml` asserts the role refuses to touch it.
 - `minecraft` builds the server image and starts it with a 1 GiB heap
-  (2 vCPU and 2.25 GiB each: 6 vCPU, 6.75 GiB) with the Paper backend. Its first
+  (2 vCPU and 3 GiB each: 6 vCPU, 9 GiB) with the Paper backend. Its first
   start downloads and patches the server, so the run takes a while.
 - `minecraft-fabric` does the same with the Fabric backend and two mods
-  (`vars/test-fabric.yml`), on Debian 13 only (2 vCPU, 2.25 GiB).
+  (`vars/test-fabric.yml`), on Debian 13 only (2 vCPU, 3 GiB).
 
 ```sh
 make test-minecraft         # one scenario (molecule test -s minecraft)
