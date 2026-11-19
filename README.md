@@ -184,22 +184,24 @@ make build      # collection tarball
 
 ### Molecule tests
 
-`extensions/molecule/` has one scenario per role (`container`, `minecraft`). Each
-runs its role alone with the role's test vars, `roles/<role>/vars/test.yml`
-(`import_role` with `vars_from: test`; the role never loads that file itself).
-A scenario's `prepare.yml` installs podman, which the roles expect. Each boots
-three VMs with vagrant-libvirt (Debian 13, Ubuntu 24.04 and 26.04), runs prepare,
-converge, idempotence, then the role's `verification` entry point on all of them
-at once, and destroys them.
+`extensions/molecule/` has one scenario per role (`container`, `minecraft`), plus
+`minecraft-fabric` for the Fabric backend. Each runs its role alone with the
+role's test vars: `roles/<role>/vars/test.yml` (`import_role` with
+`vars_from: test`), or `test-<scenario>.yml` for a scenario of its own (the role
+never loads these files itself). A scenario's `prepare.yml` installs podman,
+which the roles expect. Each boots its VMs with vagrant-libvirt (Debian 13,
+Ubuntu 24.04 and 26.04 unless noted), runs prepare, converge, idempotence, then
+the role's `verification` entry point on all of them at once, and destroys them.
 
 - `container` runs a pulled busybox httpd (1 vCPU each, 1 GiB for Debian, 2 GiB
   for Ubuntu: 3 vCPU, 5 GiB). It also checks the foreign-account guard: `prepare.yml`
   creates a plain user whose name collides with a default `container_user`, and
   `verify.yml` asserts the role refuses to touch it.
 - `minecraft` builds the server image and starts it with a 1 GiB heap
-  (2 vCPU and 2.25 GiB each: 6 vCPU, 6.75 GiB): Fabric with two mods on Debian
-  (host_vars in its `molecule.yml`), Paper on Ubuntu. Its first start downloads
-  and patches the server, so the run takes a while.
+  (2 vCPU and 2.25 GiB each: 6 vCPU, 6.75 GiB) with the Paper backend. Its first
+  start downloads and patches the server, so the run takes a while.
+- `minecraft-fabric` does the same with the Fabric backend and two mods
+  (`vars/test-fabric.yml`), on Debian 13 only (2 vCPU, 2.25 GiB).
 
 ```sh
 make test-minecraft         # one scenario (molecule test -s minecraft)

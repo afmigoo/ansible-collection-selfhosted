@@ -1,7 +1,7 @@
 ---
 # Tests the minecraft role alone: converge and verify run it with roles/minecraft/vars/test.yml (vars_from: test),
-# which builds the server image on each VM, then idempotence and its verification entry point. Debian runs the
-# Fabric backend with a mod (host_vars below, since role vars from vars_from would override inventory), Ubuntu Paper.
+# which builds the Paper server image on each VM, then idempotence and its verification entry point. The Fabric
+# backend has its own scenario, minecraft-fabric.
 # prepare.yml installs podman, which the role expects.
 # The server with a 1 GiB heap and the image build need more than the shared platforms get: 2 vCPU and 2.25 GiB per VM,
 # 6.75 GiB in total (keep it under 7 GiB on the 9.7 GiB agent-sandbox host). Same boxes as ../config.yml.
@@ -20,16 +20,3 @@ platforms:
     box_url: file://${MOLECULE_SCENARIO_DIRECTORY}/../boxes/ubuntu-26.04.json
     cpus: 2
     memory: 2304
-provisioner:
-  name: ansible
-  inventory:
-    host_vars:
-      molecule-debian-13:
-        minecraft_backend: fabric
-        minecraft_backend_spec:
-          mods:
-            # With a sha256, so the download is checked and idempotence skips it by checksum
-            - url: https://cdn.modrinth.com/data/P7dR8mSH/versions/Zns5SSRA/fabric-api-0.166.2%2B26.3.jar
-              sha256: e8acacc7836f39237c83c2a664b039647ee36f93822797acc40cda44666002ea
-            # Without one, so idempotence keeps the existing file
-            - url: https://cdn.modrinth.com/data/gvQqBUqZ/versions/fWv5bnZk/lithium-fabric-0.26.3%2Bmc26.3.jar

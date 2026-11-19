@@ -21,7 +21,8 @@ Unreleased.
   and the `server.properties` keys in `minecraft_properties`, and can enable RCON inside the container. Its data lives in
   `/var/lib/selfhosted/<minecraft_name>/data`, owned by `minecraft_user` (default `selfhosted-<minecraft_name>`),
   which it passes to `container` as `container_user`.
-- Molecule scenarios `container` and `minecraft` on Debian 13, Ubuntu 24.04 and 26.04. `container` also checks that
+- Molecule scenarios `container` and `minecraft` (Paper) on Debian 13, Ubuntu 24.04 and 26.04, and `minecraft-fabric`
+  (Fabric with two mods) on Debian 13. `container` also checks that
   the role refuses to touch a foreign account whose name collides with a default `container_user`.
 - Playbooks `afmigoo.selfhosted.minecraft` and `afmigoo.selfhosted.verify`.
 - CI on GitHub Actions, as in afmigoo.provision: ansible-lint, building and installing the collection and
