@@ -204,12 +204,16 @@ the role's `verification` entry point on all of them at once, and destroys them.
   (`vars/test-fabric.yml`), on Debian 13 only (2 vCPU, 3 GiB).
 
 ```sh
-make test-minecraft         # one scenario (molecule test -s minecraft)
-make test                   # all of them, one scenario at a time (molecule test --all)
-make destroy                # clean up after an interrupted run
+make test-minecraft           # one scenario (molecule test -s minecraft)
+make test                     # all of them, one scenario at a time (molecule test --all)
+make test-minecraft SERIAL=1  # one platform at a time, only one VM up (molecule test -p ...)
+make destroy                  # clean up after an interrupted run
 ```
 
-Don't pass `--workers` above 1 on a small host. The RCON password in
+On a host that can't fit a scenario's VMs at once (`minecraft` needs 9 GiB),
+add `SERIAL=1`: each platform runs the whole sequence on its own, so the run
+needs one VM's memory but takes about three times as long. Don't pass
+`--workers` above 1 on a small host. The RCON password in
 `roles/minecraft/vars/test.yml` is a throwaway, allowlisted for gitleaks in
 `.gitleaks.toml`.
 
