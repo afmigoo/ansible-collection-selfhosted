@@ -31,14 +31,17 @@ themselves. Opening ports in the firewall is up to you (e.g.
 | Playbook | Roles |
 |----------|-------|
 | `afmigoo.selfhosted.minecraft` | `minecraft` |
+| `afmigoo.selfhosted.minecraft_full` | `afmigoo.provision.podman`, then `minecraft` |
 | `afmigoo.selfhosted.verify` | the `verification` entry point of every app role whose `<role>_enable` is true |
 
-They target `all` unless `selfhosted_hosts` is set, and enable their roles
-themselves. Podman has to be on the host already (e.g. `afmigoo.provision.podman`),
-since this collection doesn't depend on `afmigoo.provision`:
+Each app has two playbooks: `<app>` applies only its role and expects podman
+on the host already, and `<app>_full` installs what the role needs first (with
+roles from `afmigoo.provision`, which this collection depends on), then runs
+`<app>`. They target `all` unless `selfhosted_hosts` is set, and enable their
+roles themselves:
 
 ```sh
-ansible-playbook afmigoo.selfhosted.minecraft -e minecraft_eula=true -e selfhosted_hosts=minecraft
+ansible-playbook afmigoo.selfhosted.minecraft_full -e minecraft_eula=true -e selfhosted_hosts=minecraft
 ```
 
 ## Install

@@ -1,0 +1,14 @@
+---
+# The minecraft playbook on a host without podman: installs it with afmigoo.provision.podman first.
+# ansible-playbook afmigoo.selfhosted.minecraft_full -e minecraft_eula=true
+- name: Podman for the Minecraft server
+  hosts: "{{ selfhosted_hosts | default('all') }}"
+  gather_facts: false
+  become: true
+  vars:
+    podman_enable: true
+  roles:
+    - role: afmigoo.provision.podman
+
+- name: Minecraft server
+  ansible.builtin.import_playbook: afmigoo.selfhosted.minecraft

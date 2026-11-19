@@ -25,6 +25,8 @@ Unreleased.
 - Molecule scenarios `container` and `minecraft` (Paper) on Debian 13, Ubuntu 24.04 and 26.04, and `minecraft-fabric`
   (Fabric with two mods) on Debian 13. `container` also checks that
   the role refuses to touch a foreign account whose name collides with a default `container_user`.
-- Playbooks `afmigoo.selfhosted.minecraft` and `afmigoo.selfhosted.verify`.
+- Playbooks `afmigoo.selfhosted.minecraft` (the role only), `afmigoo.selfhosted.minecraft_full` (podman from
+  `afmigoo.provision.podman`, then the role) and `afmigoo.selfhosted.verify`.
+- Depends on `afmigoo.provision` (git, tag v0.4.1) for the `*_full` playbooks.
 - CI on GitHub Actions, as in afmigoo.provision: ansible-lint, building and installing the collection and
   syntax-checking its playbooks, gitleaks, actionlint, zizmor and a changelog check. Dependabot for pip and actions.
