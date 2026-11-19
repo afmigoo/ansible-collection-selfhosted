@@ -19,12 +19,13 @@ Unreleased.
   checked against its sha256 and run while the image builds, and `mods`, a list of `{url, sha256}` downloaded to
   `data/mods` (checked when a sha256 is given, never deleted). Each backend also takes `template`, its Containerfile
   template, and `template_args`, extra variables for it. It requires `minecraft_eula: true`, manages `eula.txt`
-  and the `server.properties` keys in `minecraft_properties`, and can enable RCON inside the container. Its data lives in
-  `/var/lib/selfhosted/<minecraft_name>/data`, owned by `minecraft_user` (default `selfhosted-<minecraft_name>`),
+  and the `server.properties` keys in `minecraft_properties`, and can enable RCON inside the container. Its data lives
+  in `/var/lib/selfhosted/<minecraft_name>/data`, owned by `minecraft_user` (default `selfhosted-<minecraft_name>`),
   which it passes to `container` as `container_user`.
-- Molecule scenarios `container` and `minecraft` (Paper) on Debian 13, Ubuntu 24.04 and 26.04, and `minecraft-fabric`
-  (Fabric with two mods) on Debian 13, and `playbook-minecraft_full` for that playbook on bare hosts. `container` also checks that
-  the role refuses to touch a foreign account whose name collides with a default `container_user`.
+- Molecule scenarios `container` and `minecraft` (Paper) on Debian 13, Ubuntu 24.04 and 26.04, `minecraft-fabric`
+  (Fabric with two mods) on Debian 13, and `playbook-minecraft_full`, which runs that playbook on bare hosts of all
+  three. `container` also checks that the role refuses to touch a foreign account whose name collides with a default
+  `container_user`.
 - Playbooks `afmigoo.selfhosted.minecraft` (the role only), `afmigoo.selfhosted.minecraft_full` (podman from
   `afmigoo.provision.podman`, then the role) and `afmigoo.selfhosted.verify`.
 - Depends on `afmigoo.provision` (git, tag v0.4.1) for the `*_full` playbooks.
