@@ -26,8 +26,10 @@ Unreleased.
   (Fabric with two mods) on Debian 13, and `playbook-minecraft_full`, which runs that playbook on bare hosts of all
   three. `container` also checks that the role refuses to touch a foreign account whose name collides with a default
   `container_user`.
-- Playbooks `afmigoo.selfhosted.minecraft` (the role only), `afmigoo.selfhosted.minecraft_full` (podman from
-  `afmigoo.provision.podman`, then the role) and `afmigoo.selfhosted.verify`.
+- Playbooks `afmigoo.selfhosted.minecraft` (the role only), `afmigoo.selfhosted.minecraft_full` (base setup and
+  hardening from `afmigoo.provision.base` and `harden`, hardening on by default with the Minecraft port open in ufw and
+  `-e harden_enable=false` to skip it, podman from `afmigoo.provision.podman`, then the role) and
+  `afmigoo.selfhosted.verify`.
 - Depends on `afmigoo.provision` (git, tag v0.4.1) for the `*_full` playbooks.
 - CI on GitHub Actions, as in afmigoo.provision: ansible-lint, building and installing the collection and
   syntax-checking its playbooks, gitleaks, actionlint, zizmor and a changelog check. Dependabot for pip and actions.

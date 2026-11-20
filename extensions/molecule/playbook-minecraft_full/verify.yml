@@ -1,5 +1,6 @@
 ---
-# Verifies every role the playbook ran: podman from afmigoo.provision, then minecraft with the role's vars/test.yml
+# Verifies every role the playbook ran: base setup, hardening and podman from afmigoo.provision, then minecraft with
+# the role's vars/test.yml
 - name: Load the minecraft test vars
   hosts: all
   gather_facts: false
@@ -8,9 +9,14 @@
       ansible.builtin.include_vars:
         file: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}/roles/minecraft/vars/test.yml"
 
-- name: Verify podman
+# What minecraft_full sets for the afmigoo.provision roles, so their verification checks it
+- name: Verify base setup, hardening and podman
   ansible.builtin.import_playbook: afmigoo.provision.verify
   vars:
+    base_enable: true
+    harden_enable: true
+    harden_ufw_allowed_ports:
+      - {port: "{{ minecraft_port | default(25565) }}", comment: Minecraft}
     podman_enable: true
 
 - name: Verify minecraft

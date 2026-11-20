@@ -23,22 +23,31 @@ The roles need podman >= 4.4 (Quadlet) on the host and don't install it;
 it also needs `setfacl` (package `acl`) to run tasks as the service user. Debian 12 is
 not supported: its podman 4.3 has no Quadlet. Roles never pull in other roles
 as dependencies, so playbooks order them; app roles include `container`
-themselves. Opening ports in the firewall is up to you (e.g.
-`harden_ufw_allowed_ports` in `afmigoo.provision.harden`).
+themselves. With the `<app>` playbooks, opening ports in the firewall is up to
+you (e.g. `harden_ufw_allowed_ports` in `afmigoo.provision.harden`); the
+`<app>_full` playbooks open the app's port themselves.
 
 ### Playbooks
 
 | Playbook | Roles |
 |----------|-------|
 | `afmigoo.selfhosted.minecraft` | `minecraft` |
-| `afmigoo.selfhosted.minecraft_full` | `afmigoo.provision.podman`, then `minecraft` |
+| `afmigoo.selfhosted.minecraft_full` | `afmigoo.provision.base`, `harden` and `podman`, then `minecraft` |
 | `afmigoo.selfhosted.verify` | the `verification` entry point of every app role whose `<role>_enable` is true |
 
 Each app has two playbooks: `<app>` applies only its role and expects podman
 on the host already, and `<app>_full` installs what the role needs first (with
 roles from `afmigoo.provision`, which this collection depends on), then runs
 `<app>`. They target `all` unless `selfhosted_hosts` is set, and enable their
-roles themselves:
+roles themselves.
+
+The `<app>_full` playbooks start like `afmigoo.provision.basic_hardening`: the
+`base` role (DNS, by default 1.1.1.1 and 8.8.8.8, the apt cache and a few
+packages), then hardening: IPv6 off, devsec OS and SSH hardening, and ufw with
+only ssh and the app's port open. The first run reboots the host. Pass `-e harden_enable=false` to skip it; extra vars are
+needed because the playbook sets `harden_enable: true` as a play var, which
+beats inventory. Setting `harden_ufw_allowed_ports` with `-e` replaces the
+app's port, so list it there too.
 
 ```sh
 ansible-playbook afmigoo.selfhosted.minecraft_full -e minecraft_eula=true -e selfhosted_hosts=minecraft
@@ -209,8 +218,8 @@ the role's `verification` entry point on all of them at once, and destroys them.
 - `minecraft-fabric` does the same with the Fabric backend and two mods
   (`vars/test-fabric.yml`), on Debian 13 only (2 vCPU, 3 GiB).
 - `playbook-minecraft_full` tests the `minecraft_full` playbook with the roles
-  it pulls in from `afmigoo.provision`: no `prepare.yml`, so the playbook installs
-  podman on bare hosts, then the verify playbooks of both collections check
+  it pulls in from `afmigoo.provision`: no `prepare.yml`, so the playbook sets up
+  and hardens bare hosts and installs podman, then the verify playbooks of both collections check
   every role it ran. Playbook scenarios are named `playbook-<playbook>`:
   `converge.yml` and `verify.yml` start with a play that loads each role's
   `vars/test.yml` with `include_vars`, and set what the dependency roles need

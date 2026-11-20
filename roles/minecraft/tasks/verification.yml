@@ -25,11 +25,15 @@
         XDG_RUNTIME_DIR: /run/user/{{ ansible_facts.getent_passwd[minecraft_user][1] }}
       block:
         # The published host port is bound by podman as soon as the container starts, so only a listening socket
-        # inside the container (25565 is 63DD) shows that the server is up
+        # inside the container (25565 is 63DD) shows that the server is up. getline skips a missing file:
+        # /proc/net/tcp6 is gone when IPv6 is off (e.g. afmigoo.provision.harden), where awk would abort
         - name: Wait until the server listens
           ansible.builtin.command: >-
             podman exec {{ minecraft_name }}
-            awk '$4 == "0A" && $2 ~ /:63DD$/ { found = 1 } END { exit !found }' /proc/net/tcp /proc/net/tcp6
+            awk 'BEGIN {
+            for (i = 1; i < ARGC; i++) while ((getline line < ARGV[i]) > 0) {
+            split(line, f); if (f[4] == "0A" && f[2] ~ /:63DD$/) found = 1 };
+            exit !found }' /proc/net/tcp /proc/net/tcp6
           register: __minecraft_listen
           changed_when: false
           failed_when: false
