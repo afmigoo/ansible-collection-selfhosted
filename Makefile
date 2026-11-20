@@ -39,7 +39,9 @@ endif
 # SERIAL=1: the whole sequence (create to destroy) once per platform, for hosts that can't fit a scenario's VMs at once
 $(SCENARIO_TESTS): test-%:
 ifdef SERIAL
-	set -e; for p in $$(molecule list -s $* -f plain 2>/dev/null | awk '{print $$1}'); do molecule test -s $* -p $$p; done
+	set -e; platforms=$$(molecule list -s $* -f plain | awk '{print $$1}'); \
+	test -n "$$platforms" || { echo "No platforms found for scenario $* (is molecule on PATH?)" >&2; exit 1; }; \
+	for p in $$platforms; do molecule test -s $* -p $$p; done
 else
 	molecule test -s $*
 endif
