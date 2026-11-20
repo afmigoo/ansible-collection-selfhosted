@@ -11,7 +11,7 @@ container a Quadlet unit in that user's systemd.
 | Role | What it does |
 |------|--------------|
 | `afmigoo.selfhosted.container` | Library role for the app roles: one container per call. Creates the service account `container_user` (default `selfhosted-<name>`, home `container_base_dir/<name>`, default base dir `/var/lib/selfhosted`) with a subuid/subgid range and lingering, pulls or builds the image as that user, writes the Quadlet unit and starts it |
-| `afmigoo.selfhosted.minecraft` | Paper Minecraft server. Builds its image on the host (mcrcon from source, the Paper jar checked against its sha256, Eclipse Temurin 25 JRE), manages `eula.txt` and chosen `server.properties` keys, runs it with `container` |
+| `afmigoo.selfhosted.minecraft` | Paper or Fabric Minecraft server. Builds its image on the host (mcrcon from source, Eclipse Temurin 25 JRE; the Paper jar or the Fabric installer checked against its sha256), downloads Fabric mods, manages `eula.txt` and chosen `server.properties` keys, runs it with `container` |
 
 Every role is opt-in: it does nothing unless `<role>_enable: true`. Options are
 documented in each role's `meta/argument_specs.yml` (`ansible-doc -t role
@@ -23,22 +23,34 @@ The roles need podman >= 4.4 (Quadlet) on the host and don't install it;
 it also needs `setfacl` (package `acl`) to run tasks as the service user. Debian 12 is
 not supported: its podman 4.3 has no Quadlet. Roles never pull in other roles
 as dependencies, so playbooks order them; app roles include `container`
-themselves. Opening ports in the firewall is up to you (e.g.
-`harden_ufw_allowed_ports` in `afmigoo.provision.harden`).
+themselves. With the `<app>` playbooks, opening ports in the firewall is up to
+you (e.g. `harden_ufw_allowed_ports` in `afmigoo.provision.harden`); the
+`<app>_full` playbooks open the app's port themselves.
 
 ### Playbooks
 
 | Playbook | Roles |
 |----------|-------|
 | `afmigoo.selfhosted.minecraft` | `minecraft` |
+| `afmigoo.selfhosted.minecraft_full` | `afmigoo.provision.base`, `harden` and `podman`, then `minecraft` |
 | `afmigoo.selfhosted.verify` | the `verification` entry point of every app role whose `<role>_enable` is true |
 
-They target `all` unless `selfhosted_hosts` is set, and enable their roles
-themselves. Podman has to be on the host already (e.g. `afmigoo.provision.podman`),
-since this collection doesn't depend on `afmigoo.provision`:
+Each app has two playbooks: `<app>` applies only its role and expects podman
+on the host already, and `<app>_full` installs what the role needs first (with
+roles from `afmigoo.provision`, which this collection depends on), then runs
+`<app>`. They target `all` unless `selfhosted_hosts` is set, and enable their
+roles themselves.
+
+The `<app>_full` playbooks start like `afmigoo.provision.basic_hardening`: the
+`base` role (DNS, by default 1.1.1.1 and 8.8.8.8, the apt cache and a few
+packages), then hardening: IPv6 off, devsec OS and SSH hardening, and ufw with
+only ssh and the app's port open. The first run reboots the host. Pass `-e harden_enable=false` to skip it; extra vars are
+needed because the playbook sets `harden_enable: true` as a play var, which
+beats inventory. Setting `harden_ufw_allowed_ports` with `-e` replaces the
+app's port, so list it there too.
 
 ```sh
-ansible-playbook afmigoo.selfhosted.minecraft -e minecraft_eula=true -e selfhosted_hosts=minecraft
+ansible-playbook afmigoo.selfhosted.minecraft_full -e minecraft_eula=true -e selfhosted_hosts=minecraft
 ```
 
 ## Install
@@ -73,6 +85,12 @@ Install podman with `afmigoo.provision`, then run the server:
     podman_enable: true
     minecraft_enable: true
     minecraft_eula: true            # you accept https://aka.ms/MinecraftEULA
+    minecraft_backend: fabric       # default paper
+    minecraft_backend_spec:         # merged over the backend's pinned defaults
+      loader_version: "0.20.1"
+      mods:
+        - url: https://cdn.modrinth.com/data/P7dR8mSH/versions/Zns5SSRA/fabric-api-0.166.2%2B26.3.jar
+          sha256: e8acacc7836f39237c83c2a664b039647ee36f93822797acc40cda44666002ea   # optional
     minecraft_memory: 3G
     minecraft_port: 25565
     minecraft_properties:
@@ -89,11 +107,29 @@ Install podman with `afmigoo.provision`, then run the server:
 The world and config live in `/var/lib/selfhosted/minecraft/data`, owned by
 the `selfhosted-minecraft` system account (`minecraft_user`, namespaced by
 default so it can't collide with another account). Only the keys in
-`minecraft_properties` are managed (Paper rewrites `server.properties` and
+`minecraft_properties` are managed (the server rewrites `server.properties` and
 keeps the rest); changing one restarts the server. `server-port` stays 25565
-inside the container, `minecraft_port` is the host side. A new
-`minecraft_paper_url`/`minecraft_paper_sha256` pair rebuilds the image and
-restarts the server.
+inside the container, `minecraft_port` is the host side.
+
+`minecraft_backend_spec` overrides single keys of the backend's defaults; a key
+the backend doesn't have fails the role. Paper takes `url` and `sha256` of the
+server jar. Fabric takes `game_version`, `loader_version`, `installer_version`
+and `installer_sha256` (the installer runs while the image builds), quoted as
+strings, and `mods`. Both take `template`, the Containerfile template
+(`Containerfile.paper.j2` or `Containerfile.fabric.j2` in the role), and
+`template_args`, a dict of extra variables for it, so you can build the image
+from your own template. A changed spec rebuilds the image and restarts the
+server (`ansible-doc -t role afmigoo.selfhosted.minecraft` lists the defaults).
+
+Each mod is downloaded to `data/mods` under the URL's file name, checked
+against its `sha256` when given; without one an existing file is kept. The role
+never deletes jars, so removing a mod from the list leaves its jar in place, and
+jars you add by hand stay. A download restarts the server. `mods` is empty by
+default, so most mods also need Fabric API listed.
+
+Paper and Fabric keep the Nether and the End in different folders, so switching
+`minecraft_backend` on an existing world hides those dimensions until you move
+them yourself.
 
 Manage the server as its account (it has no login shell); the container and
 unit keep the plain name `minecraft`:
@@ -163,29 +199,43 @@ make build      # collection tarball
 
 ### Molecule tests
 
-`extensions/molecule/` has one scenario per role (`container`, `minecraft`). Each
-runs its role alone with the role's test vars, `roles/<role>/vars/test.yml`
-(`import_role` with `vars_from: test`; the role never loads that file itself).
-A scenario's `prepare.yml` installs podman, which the roles expect. Each boots
-three VMs with vagrant-libvirt (Debian 13, Ubuntu 24.04 and 26.04), runs prepare,
-converge, idempotence, then the role's `verification` entry point on all of them
-at once, and destroys them.
+`extensions/molecule/` has one scenario per role (`container`, `minecraft`), plus
+`minecraft-fabric` for the Fabric backend. Each runs its role alone with the
+role's test vars: `roles/<role>/vars/test.yml` (`import_role` with
+`vars_from: test`), or `test-<scenario>.yml` for a scenario of its own (the role
+never loads these files itself). A scenario's `prepare.yml` installs podman,
+which the roles expect. Each boots its VMs with vagrant-libvirt (Debian 13,
+Ubuntu 24.04 and 26.04 unless noted), runs prepare, converge, idempotence, then
+the role's `verification` entry point on all of them at once, and destroys them.
 
 - `container` runs a pulled busybox httpd (1 vCPU each, 1 GiB for Debian, 2 GiB
   for Ubuntu: 3 vCPU, 5 GiB). It also checks the foreign-account guard: `prepare.yml`
   creates a plain user whose name collides with a default `container_user`, and
   `verify.yml` asserts the role refuses to touch it.
-- `minecraft` builds the Paper image and starts the server with a 1 GiB heap
-  (2 vCPU and 2.25 GiB each: 6 vCPU, 6.75 GiB). Its first start downloads and
-  patches the server, so the run takes a while.
+- `minecraft` builds the server image and starts it with a 1 GiB heap
+  (2 vCPU and 3 GiB each: 6 vCPU, 9 GiB) with the Paper backend. Its first
+  start downloads and patches the server, so the run takes a while.
+- `minecraft-fabric` does the same with the Fabric backend and two mods
+  (`vars/test-fabric.yml`), on Debian 13 only (2 vCPU, 3 GiB).
+- `playbook-minecraft_full` tests the `minecraft_full` playbook with the roles
+  it pulls in from `afmigoo.provision`: no `prepare.yml`, so the playbook sets up
+  and hardens bare hosts and installs podman, then the verify playbooks of both collections check
+  every role it ran. Playbook scenarios are named `playbook-<playbook>`:
+  `converge.yml` and `verify.yml` start with a play that loads each role's
+  `vars/test.yml` with `include_vars`, and set what the dependency roles need
+  as `vars:` on their `import_playbook`. 2 vCPU and 3 GiB each, like `minecraft`.
 
 ```sh
-make test-minecraft         # one scenario (molecule test -s minecraft)
-make test                   # all of them, one scenario at a time (molecule test --all)
-make destroy                # clean up after an interrupted run
+make test-minecraft           # one scenario (molecule test -s minecraft)
+make test                     # all of them, one scenario at a time (molecule test --all)
+make test-minecraft SERIAL=1  # one platform at a time, only one VM up (molecule test -p ...)
+make destroy                  # clean up after an interrupted run
 ```
 
-Don't pass `--workers` above 1 on a small host. The RCON password in
+On a host that can't fit a scenario's VMs at once (`minecraft` needs 9 GiB),
+add `SERIAL=1`: each platform runs the whole sequence on its own, so the run
+needs one VM's memory but takes about three times as long. Don't pass
+`--workers` above 1 on a small host. The RCON password in
 `roles/minecraft/vars/test.yml` is a throwaway, allowlisted for gitleaks in
 `.gitleaks.toml`.
 

@@ -1,0 +1,27 @@
+#jinja2: lstrip_blocks: True
+# {{ ansible_managed }}
+FROM docker.io/library/eclipse-temurin:25-jre AS rcon-builder
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates git build-essential \
+ && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 --branch {{ minecraft_mcrcon_version }} https://github.com/Tiiffi/mcrcon.git /opt/mcrcon \
+ && make -C /opt/mcrcon
+
+FROM docker.io/library/alpine:3 AS installer-downloader
+RUN wget -O /opt/fabric-installer.jar 'https://maven.fabricmc.net/net/fabricmc/fabric-installer/{{ _minecraft_spec.installer_version }}/fabric-installer-{{ _minecraft_spec.installer_version }}.jar' \
+ && echo '{{ _minecraft_spec.installer_sha256 }}  /opt/fabric-installer.jar' | sha256sum -c -
+
+# The installer downloads the vanilla server and Fabric's libraries next to its launch jar
+FROM docker.io/library/eclipse-temurin:25-jre AS fabric-installer
+COPY --from=installer-downloader /opt/fabric-installer.jar /opt/fabric-installer.jar
+RUN mkdir /opt/fabric \
+ && java -jar /opt/fabric-installer.jar server -dir /opt/fabric -downloadMinecraft \
+      -mcversion '{{ _minecraft_spec.game_version }}' -loader '{{ _minecraft_spec.loader_version }}'
+
+FROM docker.io/library/eclipse-temurin:25-jre
+WORKDIR /data
+COPY --from=fabric-installer /opt/fabric /opt/fabric
+COPY --from=rcon-builder /opt/mcrcon/mcrcon /usr/local/bin/mcrcon
+# exec, so java gets the stop signal and saves the world. The launcher looks for the game jar in the working
+# directory (/data) unless told where it is; mods load from /data/mods
+ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS:--Xms2G -Xmx2G} -Dfabric.gameJarPath=/opt/fabric/server.jar -jar /opt/fabric/fabric-server-launch.jar --nogui"]

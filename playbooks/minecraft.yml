@@ -1,5 +1,5 @@
 ---
-# Paper Minecraft server. Needs podman >= 4.4 on the host already (e.g. from
+# Paper or Fabric Minecraft server. Needs podman >= 4.4 on the host already (e.g. from
 # afmigoo.provision.podman) and the EULA accepted:
 # ansible-playbook afmigoo.selfhosted.minecraft -e minecraft_eula=true
 - name: Minecraft server

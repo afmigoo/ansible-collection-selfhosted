@@ -1,12 +1,13 @@
 ---
 argument_specs:
   main:
-    short_description: Run a Paper Minecraft server in rootless podman
+    short_description: Run a Paper or Fabric Minecraft server in rootless podman
     description:
-      - Builds a Paper image on the host (mcrcon built from source, the Paper jar checked against its sha256, Eclipse
-        Temurin 25 JRE) and runs it with afmigoo.selfhosted.container as the system account minecraft_user.
+      - Builds a Paper or Fabric image on the host (mcrcon built from source, Eclipse Temurin 25 JRE; the Paper jar
+        or the Fabric installer checked against its sha256) and runs it with afmigoo.selfhosted.container as the
+        system account minecraft_user.
       - Writes eula.txt and the server.properties keys in minecraft_properties to /var/lib/selfhosted/<name>/data
-        before the server starts, and restarts it when they change.
+        before the server starts, downloads Fabric mods to its mods dir, and restarts it when any of them change.
       - Needs podman >= 4.4 on the host (e.g. from afmigoo.provision.podman). Opening the port in the
         firewall is up to you.
     author: afmigoo
@@ -27,14 +28,33 @@ argument_specs:
         type: str
         default: selfhosted-{{ minecraft_name }}
         description: System account that owns the server, passed to the container role as container_user.
-      minecraft_paper_url:
+      minecraft_backend:
         type: str
-        default: https://fill-data.papermc.io/v1/objects/9601f9a26a2a52a0f2c807cf1abf691f96ee4fb287878313b601cebc2c51eabf/paper-26.3-244.jar
-        description: Paper server jar to download while building the image (https://papermc.io/downloads/paper).
-      minecraft_paper_sha256:
-        type: str
-        default: 9601f9a26a2a52a0f2c807cf1abf691f96ee4fb287878313b601cebc2c51eabf
-        description: sha256 of the jar; the build fails if it doesn't match.
+        default: paper
+        choices: [paper, fabric]
+        description:
+          - Server software. Paper and Fabric store the Nether and the End in different folders (world_nether and
+            world_the_end vs world/DIM-1 and world/DIM1), so switching an existing world hides those dimensions until
+            you move them yourself.
+      minecraft_backend_spec:
+        type: dict
+        default: {}
+        description:
+          - Keys merged over the backend's defaults; leave out a key to keep its default. The role fails on keys the
+            backend doesn't have.
+          - "paper: C(url) of the server jar (https://papermc.io/downloads/paper) and its C(sha256); defaults to Paper
+            26.3 build 244. The build fails if the jar doesn't match."
+          - "fabric: C(game_version) (default 26.3), C(loader_version) (default 0.20.1), C(installer_version) (default
+            1.1.2) and C(installer_sha256) of that installer from https://maven.fabricmc.net, quoted as strings. The
+            installer runs while the image builds and puts the vanilla server and Fabric's libraries into it."
+          - "fabric: C(mods), a list of C({url, sha256}), default empty, so not even Fabric API. Each jar is downloaded
+            to data/mods under the URL's file name and checked against its sha256 if given; without one an existing
+            file is kept. Jars that aren't listed are left in place, and a download restarts the server."
+          - "Both: C(template), the Containerfile template (default Containerfile.paper.j2 or Containerfile.fabric.j2
+            from the role's templates; Ansible's usual template search also finds files next to the playbook, or give
+            an absolute path), and C(template_args), a dict whose keys become variables in that template (default
+            empty). The template sees the role's variables and the merged spec as _minecraft_spec. Start a custom one
+            from the role's own: it has to build mcrcon and pass JAVA_OPTS to java."
       minecraft_mcrcon_version:
         type: str
         default: v0.7.2
@@ -52,7 +72,7 @@ argument_specs:
         default: {}
         description:
           - "server.properties keys to manage, e.g. {motd: My server, max-players: 10, online-mode: true}."
-          - Only these keys are touched, one line each; Paper keeps the rest. Booleans become true/false. server-port and
+          - Only these keys are touched, one line each; the server keeps the rest. Booleans become true/false. server-port and
             the RCON keys are managed by the role.
       minecraft_enable_rcon:
         type: bool

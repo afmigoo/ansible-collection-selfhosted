@@ -1,0 +1,11 @@
+---
+# Tests the minecraft role's Fabric backend: converge and verify run it with roles/minecraft/vars/test-fabric.yml
+# (vars_from: test-fabric), which builds the Fabric server image and downloads two mods, then idempotence and its
+# verification entry point. Debian 13 only: the minecraft scenario covers the three distros with Paper, and the
+# backend only changes what runs inside the container. prepare.yml installs podman, which the role expects.
+# 2 vCPU and 3 GiB, as in the minecraft scenario.
+platforms:
+  - name: molecule-debian-13
+    box: debian/trixie64
+    cpus: 2
+    memory: 3072
