@@ -1,4 +1,13 @@
 ---
-# The playbook as users run it, on hosts without podman; the vars come from the scenario's group_vars
+# The playbook as users run it, on hosts without podman. The minecraft vars come from the role's vars/test.yml;
+# include_vars keeps them for the rest of the run
+- name: Load the minecraft test vars
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Load roles/minecraft/vars/test.yml
+      ansible.builtin.include_vars:
+        file: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}/roles/minecraft/vars/test.yml"
+
 - name: Converge
   ansible.builtin.import_playbook: afmigoo.selfhosted.minecraft_full

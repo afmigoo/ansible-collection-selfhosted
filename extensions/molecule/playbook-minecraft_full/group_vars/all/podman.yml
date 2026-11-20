@@ -1,4 +1,0 @@
----
-# What the playbook needs besides the minecraft role's test vars (minecraft.yml links to them). The playbook enables
-# podman itself; set here too so afmigoo.provision.verify checks it
-podman_enable: true

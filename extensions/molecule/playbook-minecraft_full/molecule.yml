@@ -1,8 +1,8 @@
 ---
 # Tests the minecraft_full playbook on bare hosts: no prepare.yml, since installing podman (afmigoo.provision.podman)
 # is the playbook's job. Converge runs the playbook, then idempotence, then the verify playbooks of both collections.
-# Vars come from group_vars/all/: minecraft.yml links to roles/minecraft/vars/test.yml, the other files hold what the
-# dependency roles need.
+# converge.yml and verify.yml load the minecraft role's vars/test.yml first; the dependency roles' vars are set on
+# their import_playbook.
 # 2 vCPU and 3 GiB per VM, as in the minecraft scenario: 6 vCPU and 9 GiB for the three VMs at once, or run it with
 # make test-playbook-minecraft_full SERIAL=1 for one VM at a time. Same boxes as ../config.yml.
 platforms:
@@ -20,8 +20,3 @@ platforms:
     box_url: file://${MOLECULE_SCENARIO_DIRECTORY}/../boxes/ubuntu-26.04.json
     cpus: 2
     memory: 3072
-provisioner:
-  name: ansible
-  inventory:
-    links:
-      group_vars: group_vars

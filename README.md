@@ -211,10 +211,10 @@ the role's `verification` entry point on all of them at once, and destroys them.
 - `playbook-minecraft_full` tests the `minecraft_full` playbook with the roles
   it pulls in from `afmigoo.provision`: no `prepare.yml`, so the playbook installs
   podman on bare hosts, then the verify playbooks of both collections check
-  every role it ran. Playbook scenarios are named `playbook-<playbook>` and take
-  their vars from inventory, `group_vars/all/` in the scenario: a link to each
-  role's `vars/test.yml` plus what the dependency roles need. 2 vCPU and 3 GiB
-  each, like `minecraft`.
+  every role it ran. Playbook scenarios are named `playbook-<playbook>`:
+  `converge.yml` and `verify.yml` start with a play that loads each role's
+  `vars/test.yml` with `include_vars`, and set what the dependency roles need
+  as `vars:` on their `import_playbook`. 2 vCPU and 3 GiB each, like `minecraft`.
 
 ```sh
 make test-minecraft           # one scenario (molecule test -s minecraft)

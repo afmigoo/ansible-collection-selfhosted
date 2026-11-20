@@ -1,6 +1,6 @@
 ---
-# Test vars for the minecraft Molecule scenario (Paper), loaded with vars_from: test, and group_vars of the
-# playbook-minecraft_full scenario (linked there); the role itself never loads them
+# Test vars for the minecraft Molecule scenario (Paper), loaded with vars_from: test, and by the
+# playbook-minecraft_full scenario with include_vars; the role itself never loads them
 minecraft_enable: true
 minecraft_eula: true
 minecraft_memory: 1G
