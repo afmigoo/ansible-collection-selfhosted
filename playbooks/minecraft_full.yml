@@ -1,0 +1,25 @@
+---
+# The minecraft playbook on a fresh host. First, as in afmigoo.provision.basic_hardening: afmigoo.provision.base
+# (DNS, apt cache and packages) and afmigoo.provision.harden (IPv6 off, devsec OS and SSH hardening, ufw with only
+# ssh and the Minecraft port open; the first run reboots). Then podman with afmigoo.provision.podman.
+# ansible-playbook afmigoo.selfhosted.minecraft_full -e minecraft_eula=true
+# Hardening is on by default; pass -e harden_enable=false to skip it
+- name: Base setup, hardening and podman for the Minecraft server
+  hosts: "{{ selfhosted_hosts | default('all') }}"
+  gather_facts: false
+  become: true
+  vars:
+    base_enable: true
+    harden_enable: true
+    # rootless podman needs unprivileged user namespaces
+    harden_os_allow_userns: true
+    harden_ufw_allowed_ports:
+      - {port: "{{ minecraft_port | default(25565) }}", comment: Minecraft}
+    podman_enable: true
+  roles:
+    - role: afmigoo.provision.base
+    - role: afmigoo.provision.harden
+    - role: afmigoo.provision.podman
+
+- name: Minecraft server
+  ansible.builtin.import_playbook: afmigoo.selfhosted.minecraft

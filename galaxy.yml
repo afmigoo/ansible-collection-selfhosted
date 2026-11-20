@@ -18,6 +18,8 @@ tags:
   - minecraft
 dependencies:
   containers.podman: ">=1.21.0,<2.0.0"
+  # Not on Galaxy, so a git dependency pinned to a tag; the *_full playbooks use its podman role
+  git+https://github.com/afmigoo/ansible-collection-provision.git: v0.4.1
 repository: https://github.com/afmigoo/ansible-collection-selfhosted
 build_ignore:
   - .git

@@ -8,8 +8,8 @@ RUN git clone --depth 1 --branch {{ minecraft_mcrcon_version }} https://github.c
  && make -C /opt/mcrcon
 
 FROM docker.io/library/alpine:3 AS jar-downloader
-RUN wget -O /opt/paper.jar '{{ minecraft_paper_url }}' \
- && echo '{{ minecraft_paper_sha256 }}  /opt/paper.jar' | sha256sum -c -
+RUN wget -O /opt/paper.jar '{{ _minecraft_spec.url }}' \
+ && echo '{{ _minecraft_spec.sha256 }}  /opt/paper.jar' | sha256sum -c -
 
 FROM docker.io/library/eclipse-temurin:25-jre
 WORKDIR /data

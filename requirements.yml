@@ -4,3 +4,6 @@
 collections:
   - name: containers.podman
     version: 1.21.2
+  - name: https://github.com/afmigoo/ansible-collection-provision.git
+    type: git
+    version: v0.4.1

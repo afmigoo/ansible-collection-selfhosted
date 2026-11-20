@@ -8,16 +8,85 @@
       Read it, then set minecraft_eula: true.
     quiet: true
 
+- name: Check the backend
+  ansible.builtin.assert:
+    that:
+      - minecraft_backend in _minecraft_backend_spec_defaults
+      - minecraft_backend_spec is mapping
+      - minecraft_backend_spec.keys() | difference(_minecraft_backend_spec_defaults[minecraft_backend].keys()) | length == 0
+    fail_msg: >-
+      minecraft_backend must be one of {{ _minecraft_backend_spec_defaults.keys() | join(', ') }} (got {{ minecraft_backend }}),
+      and minecraft_backend_spec a dict with only these keys:
+      {{ (_minecraft_backend_spec_defaults[minecraft_backend] | default({})).keys() | join(', ') }}.
+    quiet: true
+
+- name: Merge the backend spec
+  ansible.builtin.set_fact:
+    _minecraft_spec: "{{ _minecraft_backend_spec_defaults[minecraft_backend] | combine(minecraft_backend_spec) }}"
+
 - name: Check the inputs
   ansible.builtin.assert:
     that:
       - minecraft_memory is match('^[0-9]+[KkMmGg]$')
-      - minecraft_paper_sha256 is match('^[0-9a-f]{64}$')
       - not minecraft_enable_rcon or minecraft_rcon_password | length > 0
     fail_msg: >-
-      minecraft_memory must be a Java size like 2G or 1536M (got {{ minecraft_memory }}), minecraft_paper_sha256 a
-      lowercase sha256, and minecraft_enable_rcon needs minecraft_rcon_password.
+      minecraft_memory must be a Java size like 2G or 1536M (got {{ minecraft_memory }}), and minecraft_enable_rcon
+      needs minecraft_rcon_password.
     quiet: true
+
+- name: Check the Paper spec
+  ansible.builtin.assert:
+    that:
+      - _minecraft_spec.url is string and _minecraft_spec.url | length > 0
+      - _minecraft_spec.sha256 is string and _minecraft_spec.sha256 is match('^[0-9a-f]{64}$')
+    fail_msg: minecraft_backend_spec needs a url and its lowercase sha256 (got sha256 {{ _minecraft_spec.sha256 }}).
+    quiet: true
+  when: minecraft_backend == 'paper'
+
+- name: Check the Fabric spec
+  when: minecraft_backend == 'fabric'
+  block:
+    # A bare 26.10 in YAML is the float 26.1, so versions have to be quoted strings
+    - name: Check the Fabric versions
+      ansible.builtin.assert:
+        that:
+          - _minecraft_spec.game_version is string and _minecraft_spec.game_version | length > 0
+          - _minecraft_spec.loader_version is string and _minecraft_spec.loader_version | length > 0
+          - _minecraft_spec.installer_version is string and _minecraft_spec.installer_version | length > 0
+          - _minecraft_spec.installer_sha256 is string and _minecraft_spec.installer_sha256 is match('^[0-9a-f]{64}$')
+          - _minecraft_spec.mods is sequence and _minecraft_spec.mods is not string
+        fail_msg: >-
+          game_version, loader_version and installer_version must be quoted strings (got
+          {{ _minecraft_spec.game_version }}, {{ _minecraft_spec.loader_version }}, {{ _minecraft_spec.installer_version }}),
+          installer_sha256 a lowercase sha256 and mods a list.
+        quiet: true
+
+    - name: Check the mods
+      ansible.builtin.assert:
+        that:
+          - __minecraft_mod is mapping
+          - __minecraft_mod.keys() | difference(['url', 'sha256']) | length == 0
+          - __minecraft_mod.url is defined and __minecraft_mod.url is string
+          - __minecraft_mod.url | urlsplit('path') | basename is match('^[^/]+\.jar$')
+          - __minecraft_mod.sha256 is not defined or __minecraft_mod.sha256 is match('^[0-9a-f]{64}$')
+        fail_msg: >-
+          Each mod needs a url ending in a .jar file name and may have a lowercase sha256, nothing else
+          (got {{ __minecraft_mod }}).
+        quiet: true
+      loop: "{{ _minecraft_spec.mods }}"
+      loop_control:
+        loop_var: __minecraft_mod
+        label: "{{ __minecraft_mod.url | default(__minecraft_mod) }}"
+
+    # Mods land in data/mods under the URL's file name, so two URLs must not share one
+    - name: Check that the mod file names are unique
+      ansible.builtin.assert:
+        that:
+          - __minecraft_mod_names | unique | length == __minecraft_mod_names | length
+        fail_msg: Two mod URLs end in the same file name; got {{ __minecraft_mod_names }}.
+        quiet: true
+      vars:
+        __minecraft_mod_names: "{{ _minecraft_spec.mods | map(attribute='url') | map('urlsplit', 'path') | map('basename') }}"
 
 - name: Set the server's paths and managed properties
   ansible.builtin.set_fact:

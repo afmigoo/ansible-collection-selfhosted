@@ -1,23 +1,22 @@
 ---
 # Tests the minecraft role alone: converge and verify run it with roles/minecraft/vars/test.yml (vars_from: test),
-# which builds the Paper image on each VM, then idempotence and its verification entry point.
+# which builds the Paper server image on each VM, then idempotence and its verification entry point. The Fabric
+# backend has its own scenario, minecraft-fabric.
 # prepare.yml installs podman, which the role expects.
-# Paper with a 1 GiB heap and the image build need more than the shared platforms get: 2 vCPU and 2.25 GiB per VM,
-# 6.75 GiB in total (keep it under 7 GiB on the 9.7 GiB agent-sandbox host). Same boxes as ../config.yml.
+# The server with a 1 GiB heap and the image build need more than the shared platforms get: 2 vCPU and 3 GiB per VM,
+# so the host needs 6 vCPU and 9 GiB free for the three VMs. Same boxes as ../config.yml.
 platforms:
   - name: molecule-debian-13
     box: debian/trixie64
     cpus: 2
-    memory: 2304
+    memory: 3072
   - name: molecule-ubuntu-2404
     box: cloud-image/ubuntu-24.04-amd64
     box_url: file://${MOLECULE_SCENARIO_DIRECTORY}/../boxes/ubuntu-24.04.json
     cpus: 2
-    memory: 2304
+    memory: 3072
   - name: molecule-ubuntu-2604
     box: cloud-image/ubuntu-26.04-amd64
     box_url: file://${MOLECULE_SCENARIO_DIRECTORY}/../boxes/ubuntu-26.04.json
     cpus: 2
-    memory: 2304
-provisioner:
-  name: ansible
+    memory: 3072

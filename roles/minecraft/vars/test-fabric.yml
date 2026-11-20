@@ -1,0 +1,24 @@
+---
+# Test vars for the minecraft-fabric Molecule scenario, loaded with vars_from: test-fabric; the role itself never
+# loads them. The same as test.yml, plus the Fabric backend with two mods
+minecraft_enable: true
+minecraft_eula: true
+minecraft_memory: 1G
+minecraft_properties:
+  # Escaped by the server when it rewrites the file; idempotence checks that the role writes it the same way
+  motd: "Molecule: test #1"
+  max-players: 5
+  online-mode: false
+  view-distance: 4
+minecraft_enable_rcon: true
+minecraft_rcon_password: molecule-throwaway-rcon
+# The first start downloads and patches the server on small VMs
+minecraft_verify_timeout: 900
+minecraft_backend: fabric
+minecraft_backend_spec:
+  mods:
+    # With a sha256, so the download is checked and idempotence skips it by checksum
+    - url: https://cdn.modrinth.com/data/P7dR8mSH/versions/Zns5SSRA/fabric-api-0.166.2%2B26.3.jar
+      sha256: e8acacc7836f39237c83c2a664b039647ee36f93822797acc40cda44666002ea
+    # Without one, so idempotence keeps the existing file
+    - url: https://cdn.modrinth.com/data/gvQqBUqZ/versions/fWv5bnZk/lithium-fabric-0.26.3%2Bmc26.3.jar
