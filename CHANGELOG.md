@@ -2,8 +2,6 @@
 
 ## 0.1.0
 
-Unreleased.
-
 - New role `container`: a library role that runs one container as a rootless podman Quadlet unit under its own
   system account `container_user` (default `selfhosted-<container_name>`, home `container_base_dir/<container_name>`,
   default base dir `/var/lib/selfhosted`), namespaced so it can't collide with a distro account or another service's
